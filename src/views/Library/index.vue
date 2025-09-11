@@ -26,6 +26,13 @@
       style="animation-delay: 150ms;"
     >
       <div class="max-w-7xl mx-auto pt-48">
+        <!-- 搜索统计 -->
+        <div v-if="(searchQuery || selectedType || selectedStatus) && !infiniteScroll.isEmpty.value" class="mb-4">
+          <p class="text-sm text-gray-600">
+            找到 <span class="font-medium">{{ infiniteScroll.total.value || filteredItems.length }}</span> 个结果
+            <span v-if="searchQuery">关于 "<span class="font-medium">{{ searchQuery }}</span>"</span>
+          </p>
+        </div>
         <!-- 网格视图 -->
         <GridView
           v-if="!infiniteScroll.isEmpty.value && viewMode === 'grid'"

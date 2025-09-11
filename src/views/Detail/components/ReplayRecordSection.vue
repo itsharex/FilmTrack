@@ -122,6 +122,7 @@
               <input 
                 v-model="historyForm.watched_date"
                 type="date" 
+                :max="new Date().toISOString().split('T')[0]"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
@@ -191,6 +192,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useMovieStore } from '../../../stores/movie';
+import { formatDate } from '../../../utils/constants';
 import StarRating from '../../../components/ui/StarRating.vue';
 import DeleteConfirmDialog from '../../Library/components/DeleteConfirmDialog.vue';
 import type { Movie, ReplayRecord } from '../../../types';
@@ -269,6 +271,13 @@ const closeEditModal = () => {
 
 const saveHistory = async () => {
   if (!props.movie.id) return;
+  
+  // 校验观看日期不能大于当前日期
+  const currentDate = new Date().toISOString().split('T')[0];
+  if (historyForm.value.watched_date > currentDate) {
+    alert('观看日期不能大于当前日期，请选择正确的观看日期');
+    return;
+  }
   
   saving.value = true;
   try {

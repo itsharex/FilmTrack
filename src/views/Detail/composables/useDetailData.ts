@@ -113,6 +113,15 @@ export function useDetailData(
   // 保存记录
   const handleSaveRecord = async (updatedMovie: Movie) => {
     try {
+      // 校验观看日期不能大于当前日期
+      if (updatedMovie.watched_date) {
+        const currentDate = new Date().toISOString().split('T')[0];
+        if (updatedMovie.watched_date > currentDate) {
+          showDialog('warning', '日期错误', '观看日期不能大于当前日期，请选择正确的观看日期');
+          return;
+        }
+      }
+      
       updatedMovie.updated_at = new Date().toISOString();
       await movieStore.updateMovie(updatedMovie);
       detailState.value.movie = { ...updatedMovie };

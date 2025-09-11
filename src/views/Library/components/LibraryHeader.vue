@@ -101,13 +101,7 @@
         </div>
       </div>
 
-      <!-- 搜索统计 -->
-      <div v-if="showSearchStats" class="mt-4">
-        <p class="text-sm text-gray-600">
-          找到 <span class="font-medium">{{ totalCount }}</span> 个结果
-          <span v-if="searchQuery">关于 "<span class="font-medium">{{ searchQuery }}</span>"</span>
-        </p>
-      </div>
+
     </div>
   </div>
 </template>

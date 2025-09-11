@@ -14,6 +14,7 @@ export interface ModalProps {
   cancelText?: string;
   showCancel?: boolean;
   large?: boolean;
+  confirmDisabled?: boolean; // 禁用确认按钮
 }
 
 export interface ModalEmits {

@@ -6,8 +6,8 @@
         <!-- 页面标题和统计 -->
         <div class="flex flex-row items-center justify-between gap-6">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">重刷记录</h1>
-            <p class="text-gray-600">追踪您的重刷足迹，记录美好时光</p>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">观看历史</h1>
+            <p class="text-gray-600">追踪您的观影足迹，记录美好时光</p>
           </div>
 
           <!-- 统计卡片 -->

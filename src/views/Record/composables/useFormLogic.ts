@@ -10,7 +10,8 @@ import type { RecordForm, DialogState, StatusOption } from '../types';
 import type { Status } from '../../../types';
 
 export function useFormLogic(
-  showDialog: (type: DialogState['type'], title: string, message: string, onConfirm?: () => void) => void
+  showDialog: (type: DialogState['type'], title: string, message: string, onConfirm?: () => void) => void,
+  isDateValid: Ref<boolean>
 ) {
   const router = useRouter();
   const movieStore = useMovieStore();
@@ -42,7 +43,7 @@ export function useFormLogic(
 
   // 计算属性
   const canSubmit = computed(() => {
-    return !!(form.value.title && form.value.status && form.value.tmdb_id && form.value.watched_date);
+    return !!(form.value.title && form.value.status && form.value.tmdb_id && form.value.watched_date && isDateValid.value);
   });
 
   // 下拉选项配置
@@ -72,6 +73,13 @@ export function useFormLogic(
   const handleSubmit = async () => {
     if (!canSubmit.value) {
       showDialog('warning', '提示', '请填写必填字段');
+      return;
+    }
+
+    // 校验观看日期不能大于当前日期
+    const currentDate = new Date().toISOString().split('T')[0];
+    if (form.value.watched_date > currentDate) {
+      showDialog('warning', '日期错误', '观看日期不能大于当前日期，请选择正确的观看日期');
       return;
     }
 

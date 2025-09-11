@@ -130,6 +130,8 @@ export interface WatchSourceEmits {
 // WatchProgress 组件类型
 export interface WatchProgressProps {
   movie: Movie;
+  watchProgress: WatchProgress;
+  getProgressColor: (progress: number) => string;
 }
 
 // ReplayRecordSection 组件类型

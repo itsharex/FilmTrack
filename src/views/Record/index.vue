@@ -39,6 +39,7 @@
         @update:watched-date="form.watched_date = $event"
         @update:notes="form.notes = $event"
         @set-to-last-episode="setToLastEpisode"
+        @update:date-valid="isDateValid = $event"
       />
 
       <!-- 底部按钮区域 -->
@@ -64,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMovieStore } from '../../stores/movie';
 
 // 组件导入
@@ -89,6 +90,9 @@ const {
   closeImagePreview
 } = useUIState();
 
+// 日期校验状态
+const isDateValid = ref(true);
+
 // 表单逻辑
 const {
   form,
@@ -98,7 +102,7 @@ const {
   setToLastEpisode,
   handleSubmit,
   handleReset
-} = useFormLogic(showDialog);
+} = useFormLogic(showDialog, isDateValid);
 
 // 搜索逻辑
 const {

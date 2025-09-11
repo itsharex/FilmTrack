@@ -122,6 +122,15 @@ export function useSearchLogic(
         }
       }
 
+      // 重置用户记录部分（保留影视信息）
+      form.value.status = 'watching';
+      form.value.personal_rating = 0;
+      form.value.watch_source = '';
+      form.value.notes = '';
+      form.value.watched_date = new Date().toISOString().split('T')[0];
+      form.value.current_episode = 1;
+      form.value.current_season = 1;
+
       // 清空搜索状态
       searchState.value.query = '';
       searchState.value.results = [];

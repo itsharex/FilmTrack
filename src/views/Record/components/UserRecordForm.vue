@@ -80,12 +80,17 @@
             :value="form.watched_date"
             @input="$emit('update:watchedDate', ($event.target as HTMLInputElement).value)"
             type="date"
+            :max="new Date().toISOString().split('T')[0]"
             required
-            class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
-                   border border-gray-200/50 text-gray-900 placeholder-gray-500
-                   focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100
-                   hover:border-gray-300/70 hover:bg-white/90 transition-all duration-200"
+            :class="dateInputClass"
           />
+          <!-- 日期错误提示 -->
+          <div v-if="dateError" class="mt-1 text-sm text-red-600 flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            {{ dateError }}
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">观看源/平台</label>
@@ -121,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, watch, ref } from 'vue';
 import { Clipboard as ClipboardIcon } from 'lucide-vue-next';
 import HeadlessSelect from '../../../components/ui/HeadlessSelect.vue';
 import StarRating from '../../../components/ui/StarRating.vue';
@@ -132,6 +137,53 @@ type Emits = UserRecordFormEmits;
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// 日期错误提示
+const dateError = ref<string>('');
+
+// 观看日期校验函数
+const validateWatchedDate = (): boolean => {
+  if (!props.form.watched_date) {
+    dateError.value = '请选择观看日期';
+    return false;
+  }
+  
+  const currentDate = new Date().toISOString().split('T')[0];
+  if (props.form.watched_date > currentDate) {
+    dateError.value = '观看日期不能大于当前日期';
+    return false;
+  }
+  
+  dateError.value = '';
+  return true;
+};
+
+// 日期输入框样式计算属性
+const dateInputClass = computed(() => {
+  const baseClass = 'w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm border text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 transition-all duration-200';
+  if (dateError.value) {
+    return `${baseClass} border-red-300 focus:border-red-400 focus:ring-red-100`;
+  }
+  return `${baseClass} border-gray-200/50 focus:border-blue-400 focus:ring-blue-100 hover:border-gray-300/70 hover:bg-white/90`;
+});
+
+// 日期是否有效的计算属性
+const isDateValid = computed(() => {
+  if (!props.form.watched_date) return false;
+  const currentDate = new Date().toISOString().split('T')[0];
+  return props.form.watched_date <= currentDate;
+});
+
+// 监听观看日期变化
+watch(() => props.form.watched_date, () => {
+  const isValid = validateWatchedDate();
+  emit('update:dateValid', isValid);
+});
+
+// 监听日期有效性变化
+watch(isDateValid, (newValue) => {
+  emit('update:dateValid', newValue);
+}, { immediate: true });
 
 // 计算季数选项
 const seasonOptions = computed(() => {

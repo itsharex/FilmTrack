@@ -145,13 +145,17 @@ export interface UserRecordFormEmits {
   (e: 'update:watchedDate', value: string): void;
   (e: 'update:notes', value: string): void;
   (e: 'setToLastEpisode'): void;
+  (e: 'update:dateValid', value: boolean): void;
 }
 
 // ActionButtons 组件类型
 export interface ActionButtonsProps {
-  // 暂时为空，根据实际需要添加属性
+  showButtons: boolean;
+  canSubmit: boolean;
+  isSubmitting: boolean;
 }
 
 export interface ActionButtonsEmits {
-  // 暂时为空，根据实际需要添加事件
+  (e: 'reset'): void;
+  (e: 'submit'): void;
 }
