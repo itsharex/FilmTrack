@@ -5,8 +5,10 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import type { ApiResponse, Movie, Statistics, WatchHistory } from '../types';
-import { DatabaseService, MovieDAO, StatisticsDAO } from './database';
+import type { ApiResponse, Movie, Statistics, ReplayRecord, ReplayRecordForm, DatabaseRow } from '../types';
+import { DatabaseService, ReplayRecordDAO } from './database';
+import { StatisticsDAO } from './database/dao/statistics.dao';
+import { MovieDAO } from './database/dao/movie.dao';
 import { withApiResponse } from '../utils/api-utils';
 
 /**
@@ -70,7 +72,7 @@ export class DatabaseApiService {
    * 添加电影
    * @param movie 电影数据
    */
-  static async addMovie(movie: any): Promise<ApiResponse<Movie>> {
+  static async addMovie(movie: DatabaseRow): Promise<ApiResponse<Movie>> {
     return MovieDAO.addMovie(movie);
   }
   
@@ -78,7 +80,7 @@ export class DatabaseApiService {
    * 更新电影
    * @param movie 电影数据
    */
-  static async updateMovie(movie: any): Promise<ApiResponse<Movie>> {
+  static async updateMovie(movie: DatabaseRow): Promise<ApiResponse<Movie>> {
     return MovieDAO.updateMovie(movie);
   }
   
@@ -100,48 +102,60 @@ export class DatabaseApiService {
   
   /**
    * 添加观看历史
+   * @param replayRecordForm 重刷记录表单数据
+   */
+  static async addReplayRecord(
+    replayRecordForm: ReplayRecordForm
+  ): Promise<ApiResponse<ReplayRecord>> {
+    return ReplayRecordDAO.addReplayRecord(replayRecordForm);
+  }
+
+  /**
+   * 添加观看历史（兼容旧版API）
    * @param movieId 电影ID
    * @param notes 观看笔记
    */
-  static async addWatchHistory(
+  static async addReplayRecordLegacy(
     movieId: string, 
     notes?: string
-  ): Promise<ApiResponse<WatchHistory>> {
-    return withApiResponse(async () => {
-      // 更新电影的观看时间
-      const movie = await MovieDAO.getMovieById(movieId)
-      if (movie.success && movie.data) {
-        const updatedMovie = {
-          ...movie.data,
-          updated_at: new Date().toISOString(),
-          notes: notes || movie.data.notes
-        }
-        const result = await MovieDAO.updateMovie(updatedMovie)
-        if (result.success) {
-          return {
-            id: movieId,
-            movie_id: movieId,
-            watch_date: new Date().toISOString(),
-            watched_date: new Date().toISOString(),
-            notes: notes || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as WatchHistory;
-        }
-      }
-      throw new Error('电影不存在或更新失败');
-    });
+  ): Promise<ApiResponse<ReplayRecord>> {
+    const replayRecordForm: ReplayRecordForm = {
+      movie_id: movieId,
+      watch_date: new Date().toISOString(),
+      duration: 0,
+      progress: 1.0,
+      notes: notes
+    };
+    return ReplayRecordDAO.addReplayRecord(replayRecordForm);
   }
   
   /**
    * 获取观看历史
    * @param movieId 电影ID（可选）
    * @param limit 限制数量
+   * @param offset 偏移量
    */
-  static async getWatchHistory(
+  static async getReplayRecords(
+    movieId?: string, 
+    limit?: number,
+    offset?: number
+  ): Promise<ApiResponse<ReplayRecord[]>> {
+    if (movieId) {
+      return ReplayRecordDAO.getReplayRecordsByMovieId(movieId, limit, offset);
+    } else {
+      return ReplayRecordDAO.getAllReplayRecords(limit, offset);
+    }
+  }
+
+  /**
+   * 获取观看历史（兼容旧版API）
+   * @param movieId 电影ID（可选）
+   * @param limit 限制数量
+   */
+  static async getReplayRecordsLegacy(
     movieId?: string, 
     limit?: number
-  ): Promise<ApiResponse<WatchHistory[]>> {
+  ): Promise<ApiResponse<ReplayRecord[]>> {
     return withApiResponse(async () => {
       const moviesResult = await MovieDAO.getMovies()
       if (moviesResult.success && moviesResult.data) {
@@ -162,13 +176,47 @@ export class DatabaseApiService {
             notes: movie.notes,
             created_at: movie.created_at,
             updated_at: movie.updated_at
-          } as WatchHistory))
+          } as ReplayRecord))
           .sort((a, b) => new Date(b.watched_date).getTime() - new Date(a.watched_date).getTime())
           .slice(0, limit || 50);
         
         return historyData;
       }
       return [];
+    });
+  }
+
+  /**
+   * 更新观看历史
+   * @param replayRecord 重刷记录数据
+   */
+  static async updateReplayRecord(replayRecord: ReplayRecord): Promise<ApiResponse<ReplayRecord>> {
+    return ReplayRecordDAO.updateReplayRecord(replayRecord);
+  }
+
+  /**
+   * 删除观看历史
+   * @param id 观看历史ID
+   */
+  static async deleteReplayRecord(id: string): Promise<ApiResponse<string>> {
+    return ReplayRecordDAO.deleteReplayRecord(id);
+  }
+
+  /**
+   * 根据ID获取观看历史详情
+   * @param id 观看历史ID
+   */
+  static async getReplayRecordById(id: string): Promise<ApiResponse<ReplayRecord | null>> {
+    return ReplayRecordDAO.getReplayRecordById(id);
+  }
+
+  /**
+   * 获取电影的观看次数
+   * @param movieId 电影ID
+   */
+  static async getWatchCount(movieId: string): Promise<ApiResponse<number>> {
+    return withApiResponse(async () => {
+      return ReplayRecordDAO.getWatchCount(movieId);
     });
   }
   
@@ -237,10 +285,19 @@ export const databaseAPI = {
   updateMovie: DatabaseApiService.updateMovie,
   deleteMovie: DatabaseApiService.deleteMovie,
   getMovieById: DatabaseApiService.getMovieById,
-  addWatchHistory: DatabaseApiService.addWatchHistory,
-  getWatchHistory: DatabaseApiService.getWatchHistory,
+  // 观看历史相关API
+  addReplayRecord: DatabaseApiService.addReplayRecord,
+  getReplayRecords: DatabaseApiService.getReplayRecords,
+  updateReplayRecord: DatabaseApiService.updateReplayRecord,
+  deleteReplayRecord: DatabaseApiService.deleteReplayRecord,
+  getReplayRecordById: DatabaseApiService.getReplayRecordById,
+  getWatchCount: DatabaseApiService.getWatchCount,
+  // 兼容旧版API
+  addReplayRecordLegacy: DatabaseApiService.addReplayRecordLegacy,
+  getReplayRecordsLegacy: DatabaseApiService.getReplayRecordsLegacy,
+  // 其他API
   getStatistics: DatabaseApiService.getStatistics,
   beginTransaction: DatabaseApiService.beginTransaction,
   commitTransaction: DatabaseApiService.commitTransaction,
   rollbackTransaction: DatabaseApiService.rollbackTransaction
-}; 
+};

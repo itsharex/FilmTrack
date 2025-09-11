@@ -37,17 +37,10 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  show: boolean;
-  selectedCount: number;
-  confirmInput: string;
-}
+import type { DeleteConfirmDialogProps, DeleteConfirmDialogEmits } from '../types';
 
-interface Emits {
-  (e: 'update:confirmInput', value: string): void;
-  (e: 'cancel'): void;
-  (e: 'confirm'): void;
-}
+type Props = DeleteConfirmDialogProps;
+type Emits = DeleteConfirmDialogEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

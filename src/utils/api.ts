@@ -12,10 +12,15 @@ import type {
   TMDbMovie,
   TMDbMovieDetail,
   ParsedMovie,
-  WatchHistory,
+  ReplayRecord,
   ApiResponse,
   Movie,
   Statistics,
+  QueuedRequest,
+  CacheItem,
+  TMDbImageResponse,
+  TMDbGenreResponse,
+  ErrorWithMessage,
 } from '../types';
 import { ref } from 'vue';
 import { generateSearchKeywords, generateSearchVariants, cleanTitle } from './titleUtils';
@@ -26,12 +31,7 @@ import { databaseAPI } from '../services/database-api';
 // 类型别名
 export type TMDbSearchResponse = TMDbResponse<TMDbMovie>;
 
-// 请求队列类型定义
-interface QueuedRequest {
-  request: () => Promise<any>;
-  resolve: (value: any) => void;
-  reject: (error: any) => void;
-}
+// 请求队列类型定义使用统一类型
 
 // ==================== TMDb API 客户端 ====================
 
@@ -48,7 +48,7 @@ const tmdbClient = axios.create({
 
 // API请求队列
 class RequestQueue {
-  private queue: Array<() => Promise<any>> = [];
+  private queue: Array<() => Promise<unknown>> = [];
   private processing = false;
   private requestInterval = 1000; // 请求间隔，默认1秒
 
@@ -102,12 +102,12 @@ class RequestQueue {
   }
 
   // 设置请求间隔
-  public setInterval(interval: number) {
+  public setInterval(interval: number): void {
     this.requestInterval = interval;
   }
 
   // 清空队列
-  public clear() {
+  public clear(): void {
     this.queue = [];
   }
 
@@ -132,13 +132,13 @@ export const tmdbQueue = new RequestQueue(APP_CONFIG.tmdb.request.interval); // 
  */
 export const tmdbAPI = {
   // 通用API请求方法
-  async _request(
+  async _request<T>(
     endpoint: string,
-    params: Record<string, any> = {},
+    params: Record<string, unknown> = {},
     cacheKey: string
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<T>> {
     // 检查缓存
-    const cachedResult = apiCache.get(cacheKey) as ApiResponse<any> | null;
+    const cachedResult = apiCache.get<ApiResponse<T>>(cacheKey);
     if (cachedResult) {
       return cachedResult;
     }
@@ -251,7 +251,7 @@ export const tmdbAPI = {
       searchStrategies.push(...englishKeywords);
     }
 
-    let bestResult: any = null;
+    let bestResult: ApiResponse<TMDbResponse<TMDbMovie>> | null = null;
     let bestScore = 0;
 
     for (const searchKeyword of searchStrategies) {
@@ -360,11 +360,11 @@ export const tmdbAPI = {
 
 
   // 获取类型列表
-  async getGenres(mediaType: 'movie' | 'tv'): Promise<ApiResponse<any>> {
+  async getGenres(mediaType: 'movie' | 'tv'): Promise<ApiResponse<TMDbGenreResponse>> {
     // 生成缓存键
     const cacheKey = `genres_${mediaType}`;
 
-    return this._request(`/genre/${mediaType}/list`, {}, cacheKey);
+    return this._request<TMDbGenreResponse>(`/genre/${mediaType}/list`, {}, cacheKey);
   },
 
   // 获取影视作品的背景图片
@@ -397,9 +397,9 @@ export const tmdbAPI = {
 
         if (data.backdrops && data.backdrops.length > 0) {
           backdropImages = data.backdrops
-            .sort((a: any, b: any) => b.vote_average - a.vote_average)
+            .sort((a, b) => b.vote_average - a.vote_average)
             .slice(0, 3)
-            .map((img: any) => img.file_path);
+            .map((img) => img.file_path);
 
           // 缓存结果
           apiCache.set(cacheKey, backdropImages);
@@ -428,7 +428,7 @@ export const tmdbAPI = {
   },
 
   // 获取缓存统计
-  getCacheStats(): any {
+  getCacheStats(): { count: number; size: string; oldestItem: string } {
     return apiCache.getStats();
   },
 
@@ -477,7 +477,7 @@ export const delay = (ms: number) =>
  * @param fn 函数
  * @param delay 延迟时间
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -501,7 +501,7 @@ export function debounce<T extends (...args: any[]) => any>(
  * @param fn 函数
  * @param limit 时间限制
  */
-export const throttle = <T extends (...args: any[]) => any>(
+export const throttle = <T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): ((...args: Parameters<T>) => void) => {
@@ -517,7 +517,7 @@ export const throttle = <T extends (...args: any[]) => any>(
 };
 
 // 数据转换工具
-export const transformTMDbToMovie = (tmdbMovie: TMDbMovie): any => {
+export const transformTMDbToMovie = (tmdbMovie: TMDbMovie): ParsedMovie => {
   return {
     title: tmdbMovie.title || tmdbMovie.name || '',
     original_title: tmdbMovie.original_title || tmdbMovie.original_name || '',
@@ -539,7 +539,7 @@ export const transformTMDbToMovie = (tmdbMovie: TMDbMovie): any => {
 };
 
 // 错误处理工具
-export const handleAPIError = (error: any): string => {
+export const handleAPIError = (error: ErrorWithMessage): string => {
   if (error.response) {
     return (
       error.response.data?.message || error.response.statusText || '请求失败'
@@ -551,20 +551,14 @@ export const handleAPIError = (error: any): string => {
   }
 };
 
-// 添加本地缓存功能
-interface CacheItem<T> {
-  data: T;
-  timestamp: number;
-}
-
 class ApiCache {
-  private cache: Record<string, CacheItem<any>> = {};
+  private cache: Record<string, CacheItem<unknown>> = {};
   private expirationTime: number = 24 * 60 * 60 * 1000; // 默认缓存24小时
   private maxCacheSize: number = 200; // 每个类型最大缓存项数量
   private maxStorageSize: number = 2 * 1024 * 1024; // 每个类型最大存储大小 2MB
 
   // 缓存类型映射
-  private cacheTypes = {
+  private cacheTypes: Record<string, string> = {
     'movie_details_': 'movie-details',
     'tv_details_': 'tv-details',
     'search_multi_': 'search-multi',
@@ -657,7 +651,7 @@ class ApiCache {
     try {
       const cacheType = this.getCacheType(key);
       const storageKey = `filmtrack-tmdb-${cacheType}`;
-      const typeCache = StorageService.get<Record<string, CacheItem<any>>>(storageKey as any, {});
+      const typeCache = StorageService.get<Record<string, CacheItem<unknown>>>(storageKey as keyof typeof StorageService, {});
 
       if (typeCache && typeCache[key]) {
         this.cache[key] = typeCache[key];
@@ -674,7 +668,7 @@ class ApiCache {
       const storageKey = `filmtrack-tmdb-${cacheType}`;
 
       // 获取该类型的所有缓存
-      const typeCache = StorageService.get<Record<string, CacheItem<any>>>(storageKey as any, {});
+      const typeCache = StorageService.get<Record<string, CacheItem<unknown>>>(storageKey as keyof typeof StorageService, {});
       typeCache[key] = this.cache[key];
 
       // 检查大小限制
@@ -686,8 +680,8 @@ class ApiCache {
         return;
       }
 
-      StorageService.set(storageKey as any, typeCache);
-    } catch (error: any) {
+      StorageService.set(storageKey as keyof typeof StorageService, typeCache);
+    } catch (error: unknown) {
       if (error.name === 'QuotaExceededError') {
         const cacheType = this.getCacheType(key);
         this.emergencyCleanupType(cacheType);
@@ -700,11 +694,11 @@ class ApiCache {
     try {
       const cacheType = this.getCacheType(key);
       const storageKey = `filmtrack-tmdb-${cacheType}`;
-      const typeCache = StorageService.get<Record<string, CacheItem<any>>>(storageKey as any, {});
+      const typeCache = StorageService.get<Record<string, CacheItem<unknown>>>(storageKey as keyof typeof StorageService, {});
 
       if (typeCache && typeCache[key]) {
         delete typeCache[key];
-        StorageService.set(storageKey as any, typeCache);
+        StorageService.set(storageKey as keyof typeof StorageService, typeCache);
       }
     } catch (error) {
       // 静默处理删除错误
@@ -751,7 +745,7 @@ class ApiCache {
   // 按类型清理最旧的缓存项
   private cleanupOldestCacheByType(cacheType: string): void {
     const typeKeys = Object.keys(this.cache).filter(k => this.getCacheType(k) === cacheType);
-    const entries = typeKeys.map(key => [key, this.cache[key]] as [string, CacheItem<any>]);
+    const entries = typeKeys.map(key => [key, this.cache[key]] as [string, CacheItem<unknown>]);
 
     // 按时间戳排序，删除最旧的 20%
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
@@ -765,7 +759,7 @@ class ApiCache {
   }
 
   // 按大小清理类型缓存
-  private cleanupTypeCacheBySize(_cacheType: string, typeCache: Record<string, CacheItem<any>>, storageKey: string): void {
+  private cleanupTypeCacheBySize(_cacheType: string, typeCache: Record<string, CacheItem<unknown>>, storageKey: string): void {
     const entries = Object.entries(typeCache);
 
     // 计算每个缓存项的大小
@@ -793,7 +787,7 @@ class ApiCache {
     }
 
     // 静默清理
-    StorageService.set(storageKey as any, typeCache);
+    StorageService.set(storageKey as keyof typeof StorageService, typeCache);
   }
 
   // 紧急清理特定类型
@@ -803,7 +797,7 @@ class ApiCache {
     const now = Date.now();
     const recentThreshold = 60 * 60 * 1000; // 1小时
 
-    const newTypeCache: Record<string, CacheItem<any>> = {};
+    const newTypeCache: Record<string, CacheItem<unknown>> = {};
 
     typeKeys.forEach(key => {
       const item = this.cache[key];
@@ -815,9 +809,9 @@ class ApiCache {
     });
 
     try {
-      StorageService.set(storageKey as any, newTypeCache);
+      StorageService.set(storageKey as keyof typeof StorageService, newTypeCache);
     } catch (error) {
-      StorageService.remove(storageKey as any);
+      StorageService.remove(storageKey as keyof typeof StorageService);
       typeKeys.forEach(key => delete this.cache[key]);
     }
   }
@@ -831,7 +825,7 @@ class ApiCache {
       // 清空所有分离式缓存
       Object.values(this.cacheTypes).forEach(type => {
         const storageKey = `filmtrack-tmdb-${type}`;
-        StorageService.remove(storageKey as any);
+        StorageService.remove(storageKey as keyof typeof StorageService);
       });
     } catch (error) {
       // 静默处理错误

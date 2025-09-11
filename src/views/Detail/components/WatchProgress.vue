@@ -2,37 +2,16 @@
   <div class="card p-6">
     <h2 class="text-xl font-semibold text-gray-900 mb-4">观看进度</h2>
     <div class="space-y-4">
-      <!-- 当前季进度 -->
-      <div v-if="movie.type === 'tv' && currentSeasonProgress" class="space-y-3">
+      <!-- 单季电视剧：只显示观看进度 -->
+      <div v-if="movie.type === 'tv' && isSingleSeason" class="space-y-3">
         <div class="flex items-center justify-between">
-          <span class="text-gray-600">{{ currentSeasonProgress.seasonName }}</span>
-          <span class="font-semibold">{{ currentSeasonProgress.current }}/{{ currentSeasonProgress.total }}</span>
+          <span class="text-gray-600">观看进度</span>
+          <span class="font-semibold">{{ watchProgress.current }}/{{ watchProgress.total || '?' }}</span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-3">
           <div
             :class="[
               'h-3 rounded-full transition-all duration-300',
-              getProgressColor(currentSeasonProgress.percentage)
-            ]"
-            :style="{ width: `${currentSeasonProgress.percentage}%` }"
-          ></div>
-        </div>
-        <div class="flex justify-between text-sm text-gray-500">
-          <span>{{ currentSeasonProgress.percentage }}% 完成</span>
-          <span>当前季进度</span>
-        </div>
-      </div>
-
-      <!-- 整体进度 -->
-      <div v-if="movie.type === 'tv'" class="space-y-3 pt-3 border-t border-gray-100">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-600">整体进度</span>
-          <span class="font-semibold">{{ watchProgress.current }}/{{ watchProgress.total || '?' }}</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2">
-          <div
-            :class="[
-              'h-2 rounded-full transition-all duration-300',
               getProgressColor(watchProgress.percentage)
             ]"
             :style="{ width: `${watchProgress.percentage}%` }"
@@ -40,9 +19,54 @@
         </div>
         <div class="flex justify-between text-sm text-gray-500">
           <span>{{ watchProgress.percentage }}% 完成</span>
-          <span>全剧进度</span>
+          <span>观看进度</span>
         </div>
       </div>
+
+      <!-- 多季电视剧：显示当前季进度和整体进度 -->
+      <template v-else-if="movie.type === 'tv' && !isSingleSeason">
+        <!-- 当前季进度 -->
+        <div v-if="currentSeasonProgress" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600">{{ currentSeasonProgress.seasonName }}</span>
+            <span class="font-semibold">{{ currentSeasonProgress.current }}/{{ currentSeasonProgress.total }}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div
+              :class="[
+                'h-3 rounded-full transition-all duration-300',
+                getProgressColor(currentSeasonProgress.percentage)
+              ]"
+              :style="{ width: `${currentSeasonProgress.percentage}%` }"
+            ></div>
+          </div>
+          <div class="flex justify-between text-sm text-gray-500">
+            <span>{{ currentSeasonProgress.percentage }}% 完成</span>
+            <span>当前季进度</span>
+          </div>
+        </div>
+
+        <!-- 整体进度 -->
+        <div class="space-y-3 pt-3 border-t border-gray-100">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-600">整体进度</span>
+            <span class="font-semibold">{{ watchProgress.current }}/{{ watchProgress.total || '?' }}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div
+              :class="[
+                'h-2 rounded-full transition-all duration-300',
+                getProgressColor(watchProgress.percentage)
+              ]"
+              :style="{ width: `${watchProgress.percentage}%` }"
+            ></div>
+          </div>
+          <div class="flex justify-between text-sm text-gray-500">
+            <span>{{ watchProgress.percentage }}% 完成</span>
+            <span>全剧进度</span>
+          </div>
+        </div>
+      </template>
 
       <!-- 电影进度 -->
       <div v-else class="space-y-3">
@@ -67,15 +91,29 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Movie } from '../../../types';
-import type { WatchProgress } from '../types';
+import type { WatchProgress, WatchProgressProps } from '../types';
 
-interface Props {
-  movie: Movie;
-  watchProgress: WatchProgress;
-  getProgressColor: (progress: number) => string;
-}
+const props = defineProps<WatchProgressProps>();
 
-const props = defineProps<Props>();
+// 判断是否为单季电视剧
+const isSingleSeason = computed(() => {
+  if (props.movie.type !== 'tv') {
+    return false;
+  }
+  
+  // 通过total_seasons判断
+  if (props.movie.total_seasons && props.movie.total_seasons === 1) {
+    return true;
+  }
+  
+  // 通过seasons_data判断
+  if (props.movie.seasons_data) {
+    const seasonCount = Object.keys(props.movie.seasons_data).length;
+    return seasonCount === 1;
+  }
+  
+  return false;
+});
 
 // 计算当前季进度
 const currentSeasonProgress = computed(() => {

@@ -48,17 +48,10 @@
 <script setup lang="ts">
 import { Star as StarIcon } from 'lucide-vue-next';
 import { getYear } from '../../../utils/constants';
-import type { TMDbMovie } from '../../../types';
+import type { SearchResultsProps, SearchResultsEmits } from '../types';
 
-interface Props {
-  results: TMDbMovie[];
-  getImageUrl: (path: string | null) => string;
-  isAlreadyAdded: (result: TMDbMovie) => boolean;
-}
-
-interface Emits {
-  (e: 'resultClick', result: TMDbMovie): void;
-}
+type Props = SearchResultsProps;
+type Emits = SearchResultsEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

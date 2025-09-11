@@ -12,16 +12,18 @@ import type {
   ParsedMovie,
   TMDbMovie,
   TMDbMovieDetail,
-  WatchHistory,
+  ReplayRecord,
   Statistics,
   AddMovieForm,
   UpdateMovieForm,
-  WatchHistoryForm,
+  ReplayRecordForm,
   SearchFilters,
   Pagination,
   ViewMode,
   LoadingState,
-  ApiResponse
+  ApiResponse,
+  MovieType,
+  Status
 } from '../types';
 
 
@@ -47,7 +49,7 @@ export const useMovieStore = defineStore('movie', () => {
     type: [],
     status: [],
     genres: [],
-    sortBy: 'date_added',
+    sortBy: 'date_updated',
     sortOrder: 'desc'
   });
   
@@ -75,7 +77,7 @@ export const useMovieStore = defineStore('movie', () => {
   const popularLoading = ref(false);
 
   // 观看历史
-  const watchHistory = ref<WatchHistory[]>([]);
+  const replayRecords = ref<ReplayRecord[]>([]);
 
   // ==================== 计算属性 ====================
   
@@ -404,7 +406,7 @@ export const useMovieStore = defineStore('movie', () => {
       type: [],
       status: [],
       genres: [],
-      sortBy: 'date_added',
+      sortBy: 'date_updated',
       sortOrder: 'desc'
     };
     pagination.value.page = 1;
@@ -471,11 +473,11 @@ export const useMovieStore = defineStore('movie', () => {
   /**
    * 按类型筛选影视作品
    */
-  const filterByType = (type: string) => {
-    if (filters.value.type?.includes(type as any)) {
+  const filterByType = (type: MovieType) => {
+    if (filters.value.type?.includes(type)) {
       filters.value.type = filters.value.type.filter(t => t !== type);
     } else {
-      filters.value.type = [...(filters.value.type || []), type as any];
+      filters.value.type = [...(filters.value.type || []), type];
     }
     pagination.value.page = 1;
   };
@@ -483,50 +485,217 @@ export const useMovieStore = defineStore('movie', () => {
   /**
    * 按状态筛选影视作品
    */
-  const filterByStatus = (status: string) => {
-    if (filters.value.status?.includes(status as any)) {
+  const filterByStatus = (status: Status) => {
+    if (filters.value.status?.includes(status)) {
       filters.value.status = filters.value.status.filter(s => s !== status);
     } else {
-      filters.value.status = [...(filters.value.status || []), status as any];
+      filters.value.status = [...(filters.value.status || []), status];
     }
     pagination.value.page = 1;
   };
   
+  // ==================== 观看历史相关方法 ====================
+  
   /**
-   * 获取观看历史（基于movies数据）
+   * 获取观看历史
+   * @param movieId 电影ID（可选）
+   * @param limit 限制数量
+   * @param offset 偏移量
    */
-  const fetchWatchHistory = async (movieId?: string): Promise<ApiResponse<WatchHistory[]>> => {
+  const fetchReplayRecords = async (movieId?: string, limit?: number, offset?: number): Promise<ApiResponse<ReplayRecord[]>> => {
     try {
-      const moviesResponse = await databaseAPI.getMovies();
-      if (moviesResponse.success && moviesResponse.data) {
-        // 转换movies数据为历史格式
-        const historyData = moviesResponse.data
-          .filter(movie => movieId ? movie.id === movieId : true)
-          .map(movie => ({
-            id: movie.id,
-            movie_id: movie.id,
-            watch_date: movie.updated_at,
-            watched_date: movie.updated_at,
-            episode_number: movie.current_episode,
-            season_number: movie.current_season,
-            duration: movie.runtime || 0,
-            duration_minutes: null,
-            progress: movie.status === 'completed' ? 1.0 : 0.5,
-            notes: movie.notes,
-            created_at: movie.created_at,
-            updated_at: movie.updated_at
-          } as WatchHistory))
-          .sort((a, b) => new Date(b.watched_date).getTime() - new Date(a.watched_date).getTime());
-
-        watchHistory.value = historyData;
-        return { success: true, data: historyData };
-      } else {
-        throw new Error(moviesResponse.error || '获取观看历史失败');
+      setLoading(true);
+      const response = await databaseAPI.getReplayRecords(movieId, limit, offset);
+      
+      if (response.success && response.data) {
+        if (movieId) {
+          // 如果是获取特定电影的观看历史，不更新全局状态
+          return response;
+        } else {
+          // 更新全局观看历史状态
+          replayRecords.value = response.data;
+        }
       }
+      
+      setLoading(false);
+      return response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setLoading(false, errorMessage);
       console.error('获取观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+   * 获取特定电影的观看历史
+   * @param movieId 电影ID
+   */
+  const getMovieReplayRecords = async (movieId: string): Promise<ApiResponse<ReplayRecord[]>> => {
+    try {
+      return await databaseAPI.getReplayRecords(movieId);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('获取电影观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+   * 更新电影记录时同步观看历史
+   * @param movieId 电影ID
+   * @param movieData 电影数据
+   */
+  const updateMovieWithHistory = async (movieId: string, movieData: UpdateMovieForm): Promise<ApiResponse<void>> => {
+    try {
+      setLoading(true);
+      
+      // 更新电影记录
+      const updateResponse = await updateMovie(movieData);
+      
+      if (!updateResponse.success) {
+        return updateResponse;
+      }
+      
+      // 如果包含观看相关信息且已有重刷记录，同步到最新的观看历史
+      if ((movieData.status === 'completed' || movieData.personal_rating) && movieData.personal_rating) {
+        const existingHistoryResponse = await getMovieReplayRecords(movieId);
+        
+        if (existingHistoryResponse.success && existingHistoryResponse.data) {
+          const existingHistory = existingHistoryResponse.data;
+          
+          if (existingHistory.length > 0) {
+            // 仅更新最新的观看历史记录，不自动创建新记录
+            const latestHistory = existingHistory[existingHistory.length - 1];
+            await updateReplayRecord({
+              ...latestHistory,
+              rating: movieData.personal_rating,
+              notes: movieData.notes,
+              watch_source: movieData.watch_source
+            });
+          }
+          // 移除自动创建重刷记录的逻辑
+        }
+      }
+      
+      setLoading(false);
+      return { success: true, data: undefined };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setLoading(false, errorMessage);
+      console.error('更新电影和观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+    * 添加重刷记录
+    * @param replayRecordForm 重刷记录表单数据
+    */
+   const addReplayRecord = async (replayRecordForm: ReplayRecordForm): Promise<ApiResponse<ReplayRecord>> => {
+    try {
+      setLoading(true);
+      const response = await databaseAPI.addReplayRecord(replayRecordForm);
+      
+      if (response.success && response.data) {
+        // 更新本地观看历史状态
+        replayRecords.value = [response.data, ...replayRecords.value];
+        
+        // 刷新电影列表以更新观看次数等信息
+        await fetchMovies();
+      }
+      
+      setLoading(false);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setLoading(false, errorMessage);
+      console.error('添加观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+    * 更新重刷记录
+    * @param replayRecord 重刷记录数据
+    */
+   const updateReplayRecord = async (replayRecordData: ReplayRecord): Promise<ApiResponse<ReplayRecord>> => {
+    try {
+      setLoading(true);
+      const response = await databaseAPI.updateReplayRecord(replayRecordData);
+      
+      if (response.success && response.data) {
+        // 更新本地观看历史状态
+        const index = replayRecords.value.findIndex(item => item.id === response.data.id);
+        if (index !== -1) {
+          replayRecords.value[index] = response.data;
+        }
+        
+        // 刷新电影列表以更新相关信息
+        await fetchMovies();
+      }
+      
+      setLoading(false);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setLoading(false, errorMessage);
+      console.error('更新观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+   * 删除观看历史记录
+   * @param id 观看历史ID
+   */
+  const deleteReplayRecord = async (id: string): Promise<ApiResponse<string>> => {
+    try {
+      setLoading(true);
+      const response = await databaseAPI.deleteReplayRecord(id);
+      
+      if (response.success) {
+        // 从本地状态中移除
+        replayRecords.value = replayRecords.value.filter(item => item.id !== id);
+        
+        // 刷新电影列表以更新观看次数等信息
+        await fetchMovies();
+      }
+      
+      setLoading(false);
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setLoading(false, errorMessage);
+      console.error('删除观看历史失败:', err);
+      return { success: false, error: errorMessage };
+    }
+  };
+  
+  /**
+   * 获取电影的观看次数
+   * @param movieId 电影ID
+   */
+  const getWatchCount = async (movieId: string): Promise<number> => {
+    try {
+      const response = await databaseAPI.getWatchCount(movieId);
+      return response.success ? response.data || 0 : 0;
+    } catch (err) {
+      console.error('获取观看次数失败:', err);
+      return 0;
+    }
+  };
+  
+  /**
+   * 获取观看历史详情
+   * @param id 观看历史ID
+   */
+  const getReplayRecordById = async (id: string): Promise<ApiResponse<ReplayRecord | null>> => {
+    try {
+      return await databaseAPI.getReplayRecordById(id);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('获取观看历史详情失败:', err);
       return { success: false, error: errorMessage };
     }
   };
@@ -552,7 +721,7 @@ export const useMovieStore = defineStore('movie', () => {
       type: [],
       status: [],
       genres: [],
-      sortBy: 'date_added',
+      sortBy: 'date_updated',
       sortOrder: 'desc'
     };
     pagination.value = {
@@ -565,7 +734,7 @@ export const useMovieStore = defineStore('movie', () => {
     loadingState.value = { loading: false, error: undefined };
     searchLoading.value = false;
     popularLoading.value = false;
-    watchHistory.value = [];
+    replayRecords.value = [];
   };
 
   // ==================== 导出 ====================
@@ -583,7 +752,7 @@ export const useMovieStore = defineStore('movie', () => {
     loadingState,
     searchLoading,
     popularLoading,
-    watchHistory,
+    replayRecords,
     
     // 计算属性
     filteredCount,
@@ -615,8 +784,15 @@ export const useMovieStore = defineStore('movie', () => {
     fetchTMDbDetail,
     filterByType,
     filterByStatus,
-    fetchWatchHistory,
+    fetchReplayRecords,
+    addReplayRecord,
+    updateReplayRecord,
+    deleteReplayRecord,
+    getWatchCount,
+    getReplayRecordById,
+    getMovieReplayRecords,
+    updateMovieWithHistory,
     clearError,
     resetStore
   };
-}); 
+});

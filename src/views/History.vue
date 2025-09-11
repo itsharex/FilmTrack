@@ -6,8 +6,8 @@
         <!-- 页面标题和统计 -->
         <div class="flex flex-row items-center justify-between gap-6">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">观看历史</h1>
-            <p class="text-gray-600">追踪您的观影足迹，记录美好时光</p>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">重刷记录</h1>
+            <p class="text-gray-600">追踪您的重刷足迹，记录美好时光</p>
           </div>
 
           <!-- 统计卡片 -->
@@ -63,8 +63,7 @@
                 <div class="timeline-content">
                   <div class="movie-card">
                     <div class="movie-poster">
-                      <CachedImage :src="getImageURL(movie.poster_path)" :alt="movie.title" class-name="poster-image"
-                        fallback="/placeholder-poster.svg" />
+                      <CachedImage :src="getImageURL(movie.poster_path)" :alt="movie.title" class-name="poster-image"/>
                       <div class="poster-overlay absolute">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -92,18 +91,18 @@
 
                         <div v-if="movie.personal_rating" class="rating-display">
                           <span class="star">★</span>
-                          <span class="rating-value">{{ formatRating(movie.personal_rating) }}/5.0</span>
+                          <span class="rating-value">{{ formatRating(movie.personal_rating / 2) }}/5.0</span>
                         </div>
                       </div>
 
                       <!-- 进度信息 -->
-                      <div v-if="movie.type === 'tv' && movie.current_episode" class="progress-info">
+                      <div v-if="movie.type === 'tv' && (movie.current_episode || movie.total_episodes)" class="progress-info">
                         <div class="progress-text">
-                          第 {{ movie.current_episode }}/{{ movie.total_episodes || '?' }} 集
+                          第 {{ getTotalWatchedEpisodes(movie) }}/{{ movie.total_episodes || '?' }} 集
                         </div>
                         <div v-if="movie.total_episodes" class="progress-bar">
                           <div class="progress-fill"
-                            :style="{ width: `${(movie.current_episode / movie.total_episodes) * 100}%` }"></div>
+                            :style="{ width: `${(getTotalWatchedEpisodes(movie) / movie.total_episodes) * 100}%` }"></div>
                         </div>
                       </div>
 
@@ -112,11 +111,7 @@
                         <p>{{ movie.notes }}</p>
                       </div>
 
-                      <div class="movie-footer">
-                        <div class="update-time">
-                          {{ formatTime(movie.updated_at) }}
-                        </div>
-                      </div>
+
                     </div>
                   </div>
                 </div>
@@ -153,7 +148,7 @@
               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h3 class="empty-title">暂无观看历史</h3>
+        <h3 class="empty-title">暂无重刷记录</h3>
         <p class="empty-description">开始观看影视作品后，这里会显示你的观看记录</p>
         <router-link to="/record" class="empty-action">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +256,8 @@ const groupedMovies = computed(() => {
   const groups: { [key: string]: Movie[] } = {};
 
   movies.value.forEach(movie => {
-    const date = new Date(movie.updated_at).toDateString();
+    // 使用最后更新时间进行分组（数据库已按date_updated排序）
+    const date = new Date(movie.date_updated).toDateString();
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -272,7 +268,7 @@ const groupedMovies = computed(() => {
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
     .map(date => ({
       date,
-      items: groups[date].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      items: groups[date] // 数据库已排序，无需再次排序
     }));
 });
 
@@ -290,11 +286,35 @@ const handleImageError = (event: Event) => {
   target.src = '/placeholder-poster.svg';
 };
 
-const formatTime = (dateString: string) => {
-  return new Date(dateString).toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+
+
+// 获取累计观看集数（与首页逻辑一致）
+const getTotalWatchedEpisodes = (movie: Movie) => {
+  if (!movie || movie.type !== 'tv') return 0;
+
+  let totalWatchedEpisodes = 0;
+
+  if (movie.seasons_data && movie.current_season) {
+    // 使用seasons_data计算累计集数
+    const seasons = Object.values(movie.seasons_data)
+      .sort((a, b) => a.season_number - b.season_number);
+
+    for (const season of seasons) {
+      if (season.season_number < movie.current_season) {
+        // 前面的季全部看完
+        totalWatchedEpisodes += season.episode_count;
+      } else if (season.season_number === movie.current_season) {
+        // 当前季看了部分
+        totalWatchedEpisodes += movie.current_episode || 0;
+        break;
+      }
+    }
+  } else {
+    // 回退到传统方式
+    totalWatchedEpisodes = movie.current_episode || 0;
+  }
+
+  return totalWatchedEpisodes;
 };
 
 const formatGroupDate = (dateString: string) => {

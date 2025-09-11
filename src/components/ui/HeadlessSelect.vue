@@ -74,20 +74,10 @@ import {
 } from '@headlessui/vue'
 import { Check, ChevronsUpDown } from 'lucide-vue-next'
 
-interface Option {
-  value: string | number
-  label: string
-}
+import type { HeadlessSelectProps, HeadlessSelectEmits, Option } from './types';
 
-interface Props {
-  modelValue?: string | number | null | undefined
-  options: Option[]
-  placeholder?: string
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: string | number): void
-}
+type Props = HeadlessSelectProps;
+type Emits = HeadlessSelectEmits;
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '请选择...',
@@ -108,4 +98,4 @@ const displayValue = computed(() => {
 })
 
 
-</script> 
+</script>

@@ -17,16 +17,8 @@
 
 <script setup lang="ts">
 import { Link as LinkIcon } from 'lucide-vue-next';
+import type { WatchSourceProps, WatchSourceEmits } from '../types';
 
-interface Props {
-  watchSource: string;
-  isValidUrl: (string: string) => boolean;
-}
-
-interface Emits {
-  (e: 'openLink', url: string): void;
-}
-
-defineProps<Props>();
-defineEmits<Emits>();
+defineProps<WatchSourceProps>();
+defineEmits<WatchSourceEmits>();
 </script>

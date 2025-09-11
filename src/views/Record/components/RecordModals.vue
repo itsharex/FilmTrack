@@ -16,7 +16,6 @@
           :src="getImageUrl(form.poster_path)"
           :alt="form.title"
           class-name="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-          fallback="/placeholder-poster.svg"
         />
       </div>
     </template>
@@ -39,17 +38,10 @@ import Modal from '../../../components/ui/Modal.vue';
 import CachedImage from '../../../components/ui/CachedImage.vue';
 import type { RecordForm, DialogState } from '../types';
 
-interface Props {
-  imagePreviewVisible: boolean;
-  dialog: DialogState;
-  form: RecordForm;
-  getImageUrl: (path: string | null) => string;
-}
+import type { RecordModalsProps, RecordModalsEmits } from '../types';
 
-interface Emits {
-  (e: 'closeImagePreview'): void;
-  (e: 'closeDialog'): void;
-}
+type Props = RecordModalsProps;
+type Emits = RecordModalsEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

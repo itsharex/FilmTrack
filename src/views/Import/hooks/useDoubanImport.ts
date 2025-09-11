@@ -19,6 +19,7 @@ import type {
   ImportLog,
   DoubanMovie,
 } from '../../../types/import';
+import { Movie } from '../../../types';
 
 // 导入设置接口
 interface ImportSettings {
@@ -89,7 +90,7 @@ const checkExistingMedia = async (
   title: string,
   type: string,
   tmdbId?: number
-): Promise<{ exists: boolean; data?: any }> => {
+): Promise<{ exists: boolean; data?: Movie }> => {
   try {
     // 获取所有影视作品
     const result = await databaseAPI.getMovies();
@@ -437,11 +438,11 @@ export function useDoubanImport() {
             }
 
             // 准备要保存的数据
-            let movieData: any = {};
+            let movieData: Record<string, unknown> = {};
 
             if (tmdbMatched && tmdbData) {
               // 使用TMDb数据，但保留指定字段
-              const preservedData: Record<string, any> = {};
+              const preservedData: Record<string, unknown> = {};
 
               // 处理评分
               if (movie.rating) {
@@ -486,17 +487,21 @@ export function useDoubanImport() {
                     ? tmdbData.episode_run_time[0]
                     : null),
                 genres: tmdbData.genres
-                  ? tmdbData.genres.map((g: any) => g.name).join(',')
+                  ? tmdbData.genres.map((g: { name: string }) => g.name).join(',')
                   : '',
                 type: movie.type_ === 'movie' ? 'movie' : 'tv',
                 status: 'completed', // 默认为已看
                 personal_rating: movie.rating || 0,
                 user_rating: movie.rating || 0,
-                // 使用豆瓣的观看日期作为创建日期和更新日期
+                // 字段设置规则：
+                // date_added: 初次观看时间（豆瓣观看日期）
+                // date_updated: 每次更新影视信息时间（当前时间）
+                // created_at: 添加到数据库时间（当前时间，不可修改）
+                // updated_at: 数据库记录更新时间（当前时间）
                 date_added: movie.watched_date || new Date().toISOString(),
                 date_updated: movie.watched_date || new Date().toISOString(),
-                created_at: movie.watched_date || new Date().toISOString(),
-                updated_at: movie.watched_date || new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
                 watched_date: movie.watched_date,
                 notes: movie.comment || '',
               };

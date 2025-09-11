@@ -14,7 +14,7 @@
         @click="$emit('markEpisodeWatched')"
         class="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200 font-medium"
       >
-        这集已看
+        标记当前集
       </button>
 
       <button 
@@ -30,21 +30,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Movie } from '../../../types';
+import type { ActionButtonsProps, ActionButtonsEmits } from '../types';
 
-interface Props {
-  movie: Movie;
-}
+const props = defineProps<ActionButtonsProps>();
+defineEmits<ActionButtonsEmits>();
 
-interface Emits {
-  (e: 'editRecord'): void;
-  (e: 'markEpisodeWatched'): void;
-  (e: 'updateMovieInfo'): void;
-}
-
-const props = defineProps<Props>();
-defineEmits<Emits>();
-
-// 计算是否可以标记这集已看
+// 计算是否可以标记当前集已看
 const canMarkEpisodeWatched = computed(() => {
   const movie = props.movie;
   if (!movie || movie.type !== 'tv') return false;

@@ -59,3 +59,95 @@ export interface WatchProgress {
   percentage: number;
   isCompleted: boolean;
 }
+
+// 通用组件 Props 接口
+export interface BaseDetailProps {
+  movie: Movie;
+}
+
+export interface DetailPropsWithFormat extends BaseDetailProps {
+  formatDate: (dateString: string) => string;
+}
+
+export interface DetailHeaderProps extends BaseDetailProps {
+  backdropImages: string[];
+  currentBackdropIndex: number;
+  getImageUrl: (path: string | undefined) => string;
+  getBackdropUrl: (path: string | undefined) => string;
+  isValidUrl: (string: string) => boolean;
+}
+
+// 通用组件 Emits 接口
+export interface BaseDetailEmits {
+  (e: 'copyTitle', title: string): void;
+}
+
+export interface DetailSidebarEmits {
+  (e: 'editRecord'): void;
+  (e: 'markEpisodeWatched'): void;
+  (e: 'updateMovieInfo'): void;
+  (e: 'deleteRecord'): void;
+}
+
+export interface DetailHeaderEmits extends BaseDetailEmits {
+  (e: 'goBack'): void;
+  (e: 'showPosterPreview'): void;
+  (e: 'openExternalLink', url: string): void;
+}
+
+// DetailModals 组件类型
+export interface DetailModalsProps {
+  modalState: ModalState;
+  movie: Movie | null;
+  getImageUrl: (path: string | undefined) => string;
+}
+
+export interface DetailModalsEmits {
+  (e: 'closeEditModal'): void;
+  (e: 'closePosterPreview'): void;
+  (e: 'closeDialog'): void;
+  (e: 'saveRecord', movie: Movie): void;
+}
+
+// DetailContent 组件类型
+export interface DetailContentProps {
+  movie: Movie;
+  watchProgress: WatchProgress;
+  getProgressColor: (progress: number) => string;
+  formatDate: (dateString: string) => string;
+}
+
+// WatchSource 组件类型
+export interface WatchSourceProps {
+  watchSource: string;
+  isValidUrl: (string: string) => boolean;
+}
+
+export interface WatchSourceEmits {
+  (e: 'openLink', url: string): void;
+}
+
+// WatchProgress 组件类型
+export interface WatchProgressProps {
+  movie: Movie;
+}
+
+// ReplayRecordSection 组件类型
+export interface ReplayRecordSectionProps {
+  movie: Movie;
+}
+
+// ActionButtons 组件类型
+export interface ActionButtonsProps {
+  movie: Movie;
+}
+
+export interface ActionButtonsEmits {
+  (e: 'editRecord'): void;
+  (e: 'deleteRecord'): void;
+}
+
+// DeleteSection 组件类型
+export interface DeleteSectionEmits {
+  (e: 'deleteRecord'): void;
+}

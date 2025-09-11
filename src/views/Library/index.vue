@@ -83,20 +83,8 @@ import { fuzzySearch } from '../../utils/search';
 import { useInfiniteScroll, type LoadFunction } from '../../composables/useInfiniteScroll';
 import StorageService, { StorageKey } from '../../utils/storage';
 
-// 类型定义
-interface MovieRecord {
-  id: string;
-  title: string;
-  original_title?: string;
-  type: string;
-  status: string;
-  user_rating?: number;
-  year?: string;
-  overview?: string;
-  poster_path?: string;
-}
-
-type ViewMode = 'grid' | 'list';
+// 类型导入
+import type { MovieRecord, ViewMode } from './types';
 
 // 组件导入
 import LibraryHeader from './components/LibraryHeader.vue';

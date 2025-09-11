@@ -7,7 +7,7 @@ import { useRoute } from 'vue-router';
 import { useMovieStore } from '../../../stores/movie';
 import { tmdbAPI } from '../../../utils/api';
 import { removeCachedImages } from '../../../utils/imageCache';
-import type { Movie } from '../../../types';
+import type { Movie, TMDbMovieDetail } from '../../../types';
 import type { DetailState, DialogState } from '../types';
 
 export function useDetailData(
@@ -72,9 +72,9 @@ export function useDetailData(
         poster_path: details.poster_path,
         backdrop_path: details.backdrop_path,
         tmdb_rating: details.vote_average,
-        total_episodes: (details as any).number_of_episodes,
-        total_seasons: (details as any).number_of_seasons,
-        air_status: (details as any).status,
+        total_episodes: (details as TMDbMovieDetail).number_of_episodes,
+        total_seasons: (details as TMDbMovieDetail).number_of_seasons,
+        air_status: (details as TMDbMovieDetail).status,
         updated_at: new Date().toISOString()
       };
 

@@ -12,12 +12,9 @@
 import { ref, onMounted, watch } from 'vue';
 import { getCachedImageUrl } from '../../utils/imageCache';
 
-interface Props {
-  src: string;
-  alt?: string;
-  className?: string;
-  fallback?: string;
-}
+import type { CachedImageProps } from './types';
+
+type Props = CachedImageProps;
 
 const props = withDefaults(defineProps<Props>(), {
   alt: '',
@@ -79,4 +76,4 @@ watch(() => props.src, () => {
 onMounted(() => {
   loadCachedImage();
 });
-</script> 
+</script>

@@ -6,7 +6,6 @@
         :src="getImageURL(movie.poster_path || '')"
         :alt="movie.title"
         class-name="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        fallback="/placeholder-poster.svg"
       />
       
       <!-- 状态徽章 -->

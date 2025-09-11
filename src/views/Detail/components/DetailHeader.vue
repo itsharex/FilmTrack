@@ -7,7 +7,6 @@
         :src="getBackdropUrl(backdropImages[currentBackdropIndex])"
         :alt="movie.title"
         class-name="w-full h-full object-cover animate-scale-in"
-        fallback="/placeholder-poster.svg"
       />
       <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
     </div>
@@ -31,7 +30,6 @@
             :src="getImageUrl(movie?.poster_path)"
             :alt="movie?.title"
             class-name="w-48 h-72 object-cover rounded-lg shadow-xl hover:opacity-90 transition-all duration-300 hover:scale-105"
-            fallback="/placeholder-poster.svg"
           />
         </div>
 
@@ -69,21 +67,10 @@ import RatingComparison from './RatingComparison.vue';
 import WatchSource from './WatchSource.vue';
 import type { Movie } from '../../../types';
 
-interface Props {
-  movie: Movie;
-  backdropImages: string[];
-  currentBackdropIndex: number;
-  getImageUrl: (path: string | undefined) => string;
-  getBackdropUrl: (path: string | undefined) => string;
-  isValidUrl: (string: string) => boolean;
-}
+import type { DetailHeaderProps, DetailHeaderEmits } from '../types';
 
-interface Emits {
-  (e: 'goBack'): void;
-  (e: 'showPosterPreview'): void;
-  (e: 'copyTitle', title: string): void;
-  (e: 'openExternalLink', url: string): void;
-}
+type Props = DetailHeaderProps;
+type Emits = DetailHeaderEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

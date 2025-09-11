@@ -4,7 +4,7 @@
  * @author yanstu
  */
 
-import type { ApiResponse, Statistics } from '../../../types'
+import type { ApiResponse, Statistics, DatabaseRow } from '../../../types'
 import { DatabaseConnection } from '../connection'
 
 /**
@@ -35,11 +35,11 @@ export class StatisticsDAO {
       ])
       
       const statistics: Statistics = {
-        total_movies: (totalMoviesResult as any[])[0]?.count || 0,
-        completed_movies: (completedMoviesResult as any[])[0]?.count || 0,
-        average_rating: (averageRatingResult as any[])[0]?.avg_rating || 0.0,
-        movies_this_month: (monthlyResult as any[])[0]?.count || 0,
-        movies_this_year: (yearlyResult as any[])[0]?.count || 0
+        total_movies: (totalMoviesResult as DatabaseRow[])[0]?.count as number || 0,
+        completed_movies: (completedMoviesResult as DatabaseRow[])[0]?.count as number || 0,
+        average_rating: (averageRatingResult as DatabaseRow[])[0]?.avg_rating as number || 0.0,
+        movies_this_month: (monthlyResult as DatabaseRow[])[0]?.count as number || 0,
+        movies_this_year: (yearlyResult as DatabaseRow[])[0]?.count as number || 0
       }
       
       return { success: true, data: statistics }
@@ -47,4 +47,4 @@ export class StatisticsDAO {
       return { success: false, error: `获取统计数据失败: ${error}` }
     }
   }
-} 
+}

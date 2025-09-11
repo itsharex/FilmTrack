@@ -47,7 +47,7 @@ export interface TMDbMovie {
   popularity: number;
   adult: boolean;
   video?: boolean;
-  media_type?: 'movie' | 'tv' | 'person';
+  media_type?: 'movie' | 'tv';
 }
 
 /** TMDb 详细信息 */
@@ -180,21 +180,24 @@ export interface ParsedMovie extends Movie {
   // 与Movie完全一致，保持向后兼容
 }
 
-/** 观看历史记录 */
-export interface WatchHistory extends BaseEntity {
+/** 重刷记录 */
+export interface ReplayRecord extends BaseEntity {
   id: string;
   movie_id: string;
-  watched_date: string; // 兼容性字段
-  watch_date: string;
-  episode?: number;
-  episode_number?: number; // 兼容性字段
-  season?: number;
+  watch_date: string; // 主要观看日期字段
+  episode?: number | null; // 观看的集数（电视剧）
+  season?: number | null; // 观看的季数（电视剧）
   duration: number; // 观看时长（分钟）
   progress: number; // 观看进度（0-1）
-  notes?: string;
-  timestamp?: string; // 兼容性字段
-  status?: string; // 兼容性字段
-  movie?: Movie; // 关联的电影信息
+  rating?: number | null; // 评分（0-5）
+  notes?: string | null; // 观看笔记
+  // 兼容性字段
+  watched_date?: string; // 兼容旧版API
+  episode_number?: number; // 兼容旧版API
+  timestamp?: string; // 兼容旧版API
+  status?: string; // 兼容旧版API
+  // 关联数据
+  movie?: Movie; // 关联的电影信息（查询时可选包含）
 }
 
 /** 评论/评价 */
@@ -282,6 +285,7 @@ export interface AddMovieForm {
   current_episode?: number;
   current_season?: number;
   seasons_data?: SeasonsData;
+  watched_date?: string; // 观看日期，用于设置date_added字段
 }
 
 /** 更新影视作品表单 */
@@ -289,15 +293,42 @@ export interface UpdateMovieForm extends Partial<AddMovieForm> {
   id: string;
 }
 
-/** 观看历史记录表单 */
-export interface WatchHistoryForm {
-  movie_id: string;
-  watch_date: string;
-  episode?: number;
-  season?: number;
-  duration: number;
-  progress: number;
-  notes?: string;
+/** 重刷记录表单 - 用于创建和更新重刷记录 */
+export interface ReplayRecordForm {
+  movie_id: string; // 关联的电影ID
+  watch_date: string; // 观看日期 (ISO 8601格式)
+  episode?: number | null; // 观看的集数（电视剧）
+  season?: number | null; // 观看的季数（电视剧）
+  duration: number; // 观看时长（分钟）
+  progress: number; // 观看进度（0-1之间的小数）
+  rating?: number | null; // 评分（0-5）
+  notes?: string | null; // 观看笔记
+}
+
+/** 重刷记录查询参数 */
+export interface ReplayRecordQuery {
+  movieId?: string; // 筛选特定电影的重刷记录
+  limit?: number; // 限制返回数量
+  offset?: number; // 分页偏移量
+  startDate?: string; // 开始日期筛选
+  endDate?: string; // 结束日期筛选
+  includeMovie?: boolean; // 是否包含关联的电影信息
+}
+
+/** 重刷记录统计信息 */
+export interface ReplayRecordStats {
+  total_records: number; // 总重刷记录数
+  total_duration: number; // 总观看时长（分钟）
+  average_progress: number; // 平均观看进度
+  most_watched_movie?: {
+    movie_id: string;
+    title: string;
+    watch_count: number;
+  }; // 观看次数最多的电影
+  recent_activity: {
+    last_7_days: number;
+    last_30_days: number;
+  }; // 最近活动统计
 }
 
 // ==================== 路由类型 ====================
@@ -362,4 +393,92 @@ export interface UpdateCheckResult {
   download_url?: string;
   release_notes?: string;
   publish_date?: string;
-} 
+}
+
+// ==================== API 相关类型 ====================
+
+/** 请求队列项类型 */
+export interface QueuedRequest<T = unknown> {
+  request: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+}
+
+/** 缓存项类型 */
+export interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+}
+
+/** TMDb 图片响应类型 */
+export interface TMDbImageResponse {
+  backdrops: TMDbImage[];
+  posters: TMDbImage[];
+}
+
+/** TMDb 图片类型 */
+export interface TMDbImage {
+  aspect_ratio: number;
+  file_path: string;
+  height: number;
+  iso_639_1: string | null;
+  vote_average: number;
+  vote_count: number;
+  width: number;
+}
+
+/** TMDb 流派响应类型 */
+export interface TMDbGenreResponse {
+  genres: TMDbGenre[];
+}
+
+/** 数据库行类型 */
+export interface DatabaseRow {
+  [key: string]: unknown;
+}
+
+/** 错误处理类型 */
+export interface ErrorWithMessage {
+  message: string;
+  code?: string | number;
+  status?: number;
+}
+
+/** 设置类型 */
+export interface AppSettings {
+  theme?: 'light' | 'dark' | 'auto';
+  language?: string;
+  autoUpdate?: boolean;
+  [key: string]: unknown;
+}
+
+/** 文件操作类型 */
+export interface FileOperationResult {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+}
+
+/** CSV 解析结果类型 */
+export interface CSVParseResult {
+  [key: string]: string | number | boolean;
+}
+
+/** 豆瓣数据类型 */
+export interface DoubanMovieData {
+  title: string;
+  year?: number;
+  rating?: number;
+  genres?: string[];
+  [key: string]: unknown;
+}
+
+/** 搜索结果相关性评分类型 */
+export interface RelevanceScoreResult {
+  score: number;
+  factors: {
+    titleMatch: number;
+    yearMatch: number;
+    genreMatch: number;
+  };
+}

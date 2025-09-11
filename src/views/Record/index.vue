@@ -36,6 +36,7 @@
         @update:current-season="form.current_season = $event"
         @update:current-episode="form.current_episode = $event"
         @update:watch-source="form.watch_source = $event"
+        @update:watched-date="form.watched_date = $event"
         @update:notes="form.notes = $event"
         @set-to-last-episode="setToLastEpisode"
       />

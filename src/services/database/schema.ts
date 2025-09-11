@@ -56,6 +56,21 @@ export class DatabaseSchema {
           date_updated TEXT,
           created_at TEXT,
           updated_at TEXT
+        )`,
+        // 重刷记录表 - 记录每次观看的详细信息
+        `CREATE TABLE IF NOT EXISTS replay_records (
+          id TEXT PRIMARY KEY,
+          movie_id TEXT NOT NULL,
+          watch_date TEXT NOT NULL,
+          episode INTEGER,
+          season INTEGER,
+          duration INTEGER DEFAULT 0,
+          progress REAL DEFAULT 0.0 CHECK (progress >= 0 AND progress <= 1),
+          rating REAL CHECK (rating >= 0 AND rating <= 5),
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
         )`
       ]
       
@@ -90,6 +105,8 @@ export class DatabaseSchema {
         'ALTER TABLE movies ADD COLUMN notes TEXT',
         'ALTER TABLE movies ADD COLUMN created_at TEXT',
         'ALTER TABLE movies ADD COLUMN updated_at TEXT',
+        // 重刷记录表字段升级
+        'ALTER TABLE replay_records ADD COLUMN rating REAL'
       ]
       
       // 尝试执行ALTER命令，忽略已存在字段的错误
@@ -123,7 +140,11 @@ export class DatabaseSchema {
         'CREATE INDEX IF NOT EXISTS idx_movies_status ON movies(status)',
         'CREATE INDEX IF NOT EXISTS idx_movies_type ON movies(type)',
         'CREATE INDEX IF NOT EXISTS idx_movies_tmdb_id ON movies(tmdb_id)',
-        'CREATE INDEX IF NOT EXISTS idx_movies_date_updated ON movies(date_updated)'
+        'CREATE INDEX IF NOT EXISTS idx_movies_date_updated ON movies(date_updated)',
+        // 重刷记录表索引
+        'CREATE INDEX IF NOT EXISTS idx_replay_records_movie_id ON replay_records(movie_id)',
+        'CREATE INDEX IF NOT EXISTS idx_replay_records_watch_date ON replay_records(watch_date)',
+        'CREATE INDEX IF NOT EXISTS idx_replay_records_movie_date ON replay_records(movie_id, watch_date)'
       ]
       
       for (const indexCommand of indexCommands) {
@@ -139,4 +160,4 @@ export class DatabaseSchema {
       throw error
     }
   }
-} 
+}

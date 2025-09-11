@@ -74,17 +74,32 @@
           </div>
         </div>
 
-        <!-- 观看源/平台 -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">观看源/平台</label>
-          <input
-            v-model="localMovie.watch_source"
-            type="text"
-            placeholder="如：Netflix、爱奇艺、电影院等"
-            class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
-                   border border-gray-200/50 text-gray-900 placeholder-gray-500
-                   focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          />
+        <!-- 观看时间和观看源 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 观看时间 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">观看时间</label>
+            <input
+              v-model="localMovie.watched_date"
+              type="date"
+              class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
+                     border border-gray-200/50 text-gray-900
+                     focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
+          
+          <!-- 观看源/平台 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">观看源/平台</label>
+            <input
+              v-model="localMovie.watch_source"
+              type="text"
+              placeholder="如：Netflix、爱奇艺、电影院等"
+              class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
+                     border border-gray-200/50 text-gray-900 placeholder-gray-500
+                     focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
         </div>
 
         <!-- 观看笔记 -->
@@ -105,22 +120,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, computed } from 'vue';
-import type { Movie } from '../../types';
-import { APP_CONFIG } from '../../../config/app.config';
+import { ref, watch, computed } from 'vue';
+import { getTypeLabel, getStatusLabel } from '../../utils/constants';
 import Modal from './Modal.vue';
 import HeadlessSelect from './HeadlessSelect.vue';
 import StarRating from './StarRating.vue';
+import type { EditRecordModalProps, EditRecordModalEmits } from './types';
 
-interface Props {
-  isOpen: boolean;
-  movie: Movie | null;
-}
-
-interface Emits {
-  (e: 'close'): void;
-  (e: 'save', movie: Movie): void;
-}
+type Props = EditRecordModalProps;
+type Emits = EditRecordModalEmits;
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
@@ -205,6 +213,8 @@ const initializeMovieData = (movie: Movie): Movie => {
     status: movie.status || 'planned',
     // 确保评分字段有默认值
     personal_rating: movie.personal_rating ?? 0,
+    // 确保观看日期字段有默认值，正确回显watched_date
+    watched_date: movie.watched_date || new Date().toISOString().split('T')[0],
     // 确保其他可能缺失的字段有默认值
     current_season: movie.current_season || 1,
     current_episode: movie.current_episode || 0,
@@ -257,4 +267,4 @@ function handleClose() {
 function handleSave() {
   emit('save', JSON.parse(JSON.stringify(localMovie.value)));
 }
-</script> 
+</script>

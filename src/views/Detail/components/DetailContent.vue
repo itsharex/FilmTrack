@@ -15,11 +15,19 @@
     </div>
 
     <!-- 观看进度 (电视剧) -->
-    <div v-if="movie.type === 'tv'" class="animate-fade-in-up" style="animation-delay: 0.2s;">
+    <div v-if="movie.type === 'tv'" class="animate-fade-in-up" style="animation-delay: 0.175s;">
       <WatchProgress
         :movie="movie"
         :watch-progress="watchProgress"
         :get-progress-color="getProgressColor"
+      />
+    </div>
+
+    <!-- 重刷记录 -->
+    <div class="animate-fade-in-up" style="animation-delay: 0.2s;">
+      <ReplayRecordSection
+        :movie="movie"
+        :format-date="formatDate"
       />
     </div>
   </div>
@@ -27,14 +35,11 @@
 
 <script setup lang="ts">
 import WatchProgress from './WatchProgress.vue';
+import ReplayRecordSection from './ReplayRecordSection.vue';
 import type { Movie } from '../../../types';
-import type { WatchProgress as WatchProgressType } from '../types';
+import type { DetailContentProps } from '../types';
 
-interface Props {
-  movie: Movie;
-  watchProgress: WatchProgressType;
-  getProgressColor: (progress: number) => string;
-}
+type Props = DetailContentProps;
 
 defineProps<Props>();
 </script>

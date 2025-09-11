@@ -105,9 +105,10 @@ export function useDetailActions(
       } else {
         throw new Error(result.error || '更新失败');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('更新失败:', error);
-      showDialog('error', '更新失败', `更新失败：${error.message || error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showDialog('error', '更新失败', `更新失败：${errorMessage}`);
     }
   };
 

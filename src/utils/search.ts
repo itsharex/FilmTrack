@@ -138,7 +138,7 @@ function extractSearchText<T>(item: T, fields: string[]): string[] {
     const commonFields = ['title', 'name', 'chinese_title', 'original_title'];
     return commonFields
       .map(field => {
-        const value = (item as any)[field];
+        const value = (item as Record<string, unknown>)[field];
         return typeof value === 'string' ? value : '';
       })
       .filter(Boolean);
@@ -146,7 +146,7 @@ function extractSearchText<T>(item: T, fields: string[]): string[] {
 
   return fields
     .map(field => {
-      const value = field.split('.').reduce((obj, key) => obj?.[key], item as any);
+      const value = field.split('.').reduce((obj, key) => obj?.[key], item as Record<string, unknown>);
       return typeof value === 'string' ? value : '';
     })
     .filter(Boolean);
@@ -222,4 +222,4 @@ export function highlightMatch(text: string, query: string, enablePinyin = true)
   }
 
   return text;
-} 
+}

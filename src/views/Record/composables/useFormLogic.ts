@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { useMovieStore } from '../../../stores/movie';
 import { APP_CONFIG } from '../../../../config/app.config';
 import type { RecordForm, DialogState, StatusOption } from '../types';
+import type { Status } from '../../../types';
 
 export function useFormLogic(
   showDialog: (type: DialogState['type'], title: string, message: string, onConfirm?: () => void) => void
@@ -41,7 +42,7 @@ export function useFormLogic(
 
   // 计算属性
   const canSubmit = computed(() => {
-    return !!(form.value.title && form.value.status && form.value.tmdb_id);
+    return !!(form.value.title && form.value.status && form.value.tmdb_id && form.value.watched_date);
   });
 
   // 下拉选项配置
@@ -80,18 +81,21 @@ export function useFormLogic(
       const movieData = {
         tmdb_id: form.value.tmdb_id!,
         type: form.value.type as 'movie' | 'tv',
-        status: form.value.status as any,
+        status: form.value.status as Status,
         personal_rating: form.value.personal_rating || undefined,
         notes: form.value.notes || undefined,
         watch_source: form.value.watch_source || undefined,
         current_episode: form.value.current_episode || undefined,
         current_season: form.value.current_season || undefined,
-        seasons_data: form.value.seasons_data || undefined
+        seasons_data: form.value.seasons_data || undefined,
+        watched_date: form.value.watched_date // 传递观看日期用于设置date_added
       };
 
       const response = await movieStore.addMovie(movieData);
       
-      if (response.success) {
+      if (response.success && response.data) {
+        // 移除自动创建重刷记录的逻辑，用户需要手动添加重刷记录
+        
         showDialog('success', '成功', '影视作品添加成功！', () => {
           router.push({ name: 'Home' });
         });
@@ -101,9 +105,9 @@ export function useFormLogic(
         console.error('添加失败:', errorMessage);
         showDialog('error', '添加失败', errorMessage);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('添加影视作品失败:', error);
-      const errorMessage = error?.message || error?.toString() || '添加失败，请重试';
+      const errorMessage = error instanceof Error ? error.message || error.toString() || '添加失败，请重试' : String(error);
       showDialog('error', '添加失败', errorMessage);
     } finally {
       isSubmitting.value = false;

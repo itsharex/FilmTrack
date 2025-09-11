@@ -64,7 +64,7 @@ const menuItems = [
   }
 ];
 
-const isActive = (routeConfig: any) => {
+const isActive = (routeConfig: { name: string; path?: string }) => {
   return route.name === routeConfig.name;
 };
 </script>
@@ -127,4 +127,4 @@ const isActive = (routeConfig: any) => {
 .navigation-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.5);
 }
-</style> 
+</style>

@@ -11,7 +11,7 @@ import { listen } from '@tauri-apps/api/event';
  * 更新服务类
  */
 export class UpdateService {
-  private static updateListener: any = null;
+  private static updateListener: (() => void) | null = null;
   private static updateCallback: ((result: UpdateCheckResult) => void) | null =
     null;
 

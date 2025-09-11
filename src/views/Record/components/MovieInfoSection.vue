@@ -8,7 +8,6 @@
             :src="getImageUrl(form.poster_path)"
             :alt="form.title"
             class-name="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-            fallback="/placeholder-poster.svg"
           />
         </div>
       </div>
@@ -66,7 +65,7 @@
               <div class="flex items-center space-x-2">
                 <StarIcon :size="16" class="text-yellow-400 fill-yellow-400" />
                 <span class="text-lg font-semibold text-gray-900">
-                  {{ form.personal_rating ? form.personal_rating.toFixed(1) : '暂无' }}
+                  {{ form.personal_rating ? (form.personal_rating / 2).toFixed(1) : '暂无' }}
                 </span>
               </div>
             </div>
@@ -89,14 +88,10 @@ import CachedImage from '../../../components/ui/CachedImage.vue';
 import { getTypeLabel, getAirStatusLabel } from '../../../utils/constants';
 import type { RecordForm } from '../types';
 
-interface Props {
-  form: RecordForm;
-  getImageUrl: (path: string | null) => string;
-}
+import type { RecordFormProps, MovieInfoSectionEmits } from '../types';
 
-interface Emits {
-  (e: 'showImagePreview'): void;
-}
+type Props = RecordFormProps;
+type Emits = MovieInfoSectionEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

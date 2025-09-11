@@ -5,11 +5,15 @@
         v-for="i in maxRating"
         :key="i"
         type="button"
-        @click="setRating(i)"
-        @mouseover="hoverRating = i"
-        @mouseleave="hoverRating = 0"
-        class="relative focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 rounded-sm transition-all duration-150 hover:scale-110"
+        @click="!readonly && interactive ? setRating(i) : undefined"
+        @mouseover="!readonly && interactive ? hoverRating = i : undefined"
+        @mouseleave="!readonly && interactive ? hoverRating = 0 : undefined"
+        :class="[
+          'relative transition-all duration-150',
+          !readonly && interactive ? 'focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 rounded-sm hover:scale-110 cursor-pointer' : 'cursor-default'
+        ]"
         :style="{ width: `${size}px`, height: `${size}px` }"
+        :disabled="readonly || !interactive"
       >
         <!-- 背景星星 -->
         <svg
@@ -39,7 +43,7 @@
       </button>
       
       <!-- 半星按钮（仅在允许半星时显示） -->
-      <template v-if="allowHalf">
+      <template v-if="allowHalf && !readonly && interactive">
         <button
           v-for="i in maxRating"
           :key="`half-${i}`"
@@ -65,8 +69,8 @@
       </span>
       
       <!-- 重置按钮 -->
+    <div v-if="showReset && currentRating > 0 && !readonly && interactive" class="ml-2">
       <button
-        v-if="showReset && modelValue > 0"
         type="button"
         @click="resetRating"
         class="text-gray-400 hover:text-gray-600 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 rounded-sm"
@@ -78,23 +82,16 @@
       </button>
     </div>
   </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-interface Props {
-  modelValue?: number | null | undefined
-  allowHalf?: boolean
-  showValue?: boolean
-  showReset?: boolean
-  size?: number
-  maxRating?: number
-}
+import type { StarRatingProps, StarRatingEmits } from './types';
 
-interface Emits {
-  (e: 'update:modelValue', value: number): void
-}
+type Props = StarRatingProps;
+type Emits = StarRatingEmits;
 
 const props = withDefaults(defineProps<Props>(), {
   allowHalf: false,
@@ -102,7 +99,9 @@ const props = withDefaults(defineProps<Props>(), {
   showReset: false,
   size: 20,
   maxRating: 5,
-  modelValue: 0
+  modelValue: 0,
+  readonly: false,
+  interactive: true
 })
 
 const emit = defineEmits<Emits>()
@@ -154,4 +153,4 @@ const getClipPath = (index: number) => {
     return 'none'
   }
 }
-</script> 
+</script>

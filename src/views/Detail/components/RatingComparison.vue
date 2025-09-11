@@ -42,9 +42,9 @@ import { Star as StarIcon } from 'lucide-vue-next';
 import { formatRating } from '../../../utils/constants';
 import type { Movie } from '../../../types';
 
-interface Props {
-  movie: Movie;
-}
+import type { BaseDetailProps } from '../types';
+
+type Props = BaseDetailProps;
 
 defineProps<Props>();
 </script>

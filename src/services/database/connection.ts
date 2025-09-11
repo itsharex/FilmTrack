@@ -60,6 +60,9 @@ export class DatabaseConnection {
         this.instance = await this.connect()
       }
       
+      // 确保数据库表结构正确创建
+      await this.ensureTableStructure()
+      
     } catch (error) {
       
       // 如果是权限问题，提供更明确的错误信息
@@ -76,4 +79,12 @@ export class DatabaseConnection {
       throw error
     }
   }
-} 
+
+  /**
+   * 确保数据库表结构正确创建
+   */
+  private static async ensureTableStructure(): Promise<void> {
+    const { DatabaseSchema } = await import('./schema')
+    await DatabaseSchema.ensureTableStructure()
+  }
+}

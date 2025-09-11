@@ -79,3 +79,79 @@ export interface RecordState {
   dialog: DialogState;
   statusOptions: StatusOption[];
 }
+
+// 通用组件 Props 接口
+export interface BaseRecordProps {
+  getImageUrl: (path: string | null) => string;
+}
+
+export interface RecordFormProps extends BaseRecordProps {
+  form: RecordForm;
+}
+
+export interface RecordModalsProps extends BaseRecordProps {
+  imagePreviewVisible: boolean;
+  dialog: DialogState;
+  form: RecordForm;
+}
+
+export interface SearchSectionProps extends BaseRecordProps {
+  searchQuery: string;
+  results: TMDbMovie[];
+  loading: boolean;
+  showSearchTips: boolean;
+  isAlreadyAdded: (result: TMDbMovie) => boolean;
+}
+
+// 通用组件 Emits 接口
+export interface RecordModalsEmits {
+  (e: 'closeImagePreview'): void;
+  (e: 'closeDialog'): void;
+}
+
+export interface MovieInfoSectionEmits {
+  (e: 'showImagePreview'): void;
+}
+
+export interface SearchSectionEmits {
+  (e: 'update:searchQuery', value: string): void;
+  (e: 'selectFirst'): void;
+  (e: 'resultClick', result: TMDbMovie): void;
+}
+
+// SearchResults 组件类型
+export interface SearchResultsProps {
+  results: TMDbMovie[];
+  getImageUrl: (path: string | null) => string;
+  isAlreadyAdded: (result: TMDbMovie) => boolean;
+}
+
+export interface SearchResultsEmits {
+  (e: 'resultClick', result: TMDbMovie): void;
+}
+
+// UserRecordForm 组件类型
+export interface UserRecordFormProps {
+  form: RecordForm;
+  statusOptions: StatusOption[];
+}
+
+export interface UserRecordFormEmits {
+  (e: 'update:status', value: string): void;
+  (e: 'update:personalRating', value: number): void;
+  (e: 'update:currentSeason', value: number): void;
+  (e: 'update:currentEpisode', value: number): void;
+  (e: 'update:watchSource', value: string): void;
+  (e: 'update:watchedDate', value: string): void;
+  (e: 'update:notes', value: string): void;
+  (e: 'setToLastEpisode'): void;
+}
+
+// ActionButtons 组件类型
+export interface ActionButtonsProps {
+  // 暂时为空，根据实际需要添加属性
+}
+
+export interface ActionButtonsEmits {
+  // 暂时为空，根据实际需要添加事件
+}

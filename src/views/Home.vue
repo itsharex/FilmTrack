@@ -1,5 +1,6 @@
 <template>
-  <div class="h-full overflow-auto bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50">
+  <div class="h-full bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 relative">
+    <div class="h-full overflow-y-auto">
     <div class="max-w-7xl mx-auto p-6 space-y-8">
       <!-- 页面标题和快速操作 -->
       <div class="flex items-center justify-between animate-fade-in-up" style="animation-delay: 0ms;">
@@ -60,7 +61,7 @@
               <StarIcon class="w-8 h-8 mr-3" />
               <div>
                 <p class="text-yellow-100 text-sm">平均评分</p>
-                <p class="text-2xl font-bold">{{ statistics.average_rating > 0 ? formatRating(statistics.average_rating) : '0.0' }}</p>
+                <p class="text-2xl font-bold">{{ statistics.average_rating > 0 ? formatRating(statistics.average_rating / 2) : '0.0' }}</p>
               </div>
             </div>
           </div>
@@ -130,12 +131,11 @@
                 :src="getMovieImageURL(movie.poster_path)"
                 :alt="movie.title"
                 class-name="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                fallback="/placeholder-poster.svg"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
                 <div class="absolute bottom-0 left-0 right-0 p-3">
                   <p class="text-white text-sm font-medium truncate">{{ movie.title }}</p>
-                  <div class="mt-1">
+                  <div v-if="movie.type === 'tv'" class="mt-1">
                     <p class="text-white text-xs">
                       {{ getTotalWatchedEpisodes(movie) }}/{{ movie.total_episodes || '?' }} 集
                     </p>
@@ -147,7 +147,7 @@
         </div>
       </div>
 
-      <!-- 最近观看历史 -->
+      <!-- 最近重刷记录 -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 300ms;">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-gray-900">最近观看</h2>
@@ -161,20 +161,19 @@
         
         <div v-if="loadingHistory" class="flex items-center justify-center py-8">
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-          <span class="ml-3 text-gray-600">加载观看历史...</span>
+          <span class="ml-3 text-gray-600">加载重刷记录...</span>
         </div>
         
         <div v-else-if="historyError" class="text-center py-8">
           <p class="text-red-600 mb-4">{{ historyError }}</p>
-          <button @click="loadWatchHistory" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <button @click="loadReplayHistory" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             重试
           </button>
         </div>
         
         <div v-else-if="recentHistory.length === 0" class="text-center py-8">
           <ClockIcon class="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p class="text-gray-500 mb-2">暂无观看历史</p>
-          <p class="text-gray-400 text-sm">开始观看影视作品后，这里会显示观看记录</p>
+          <p class="text-gray-500 mb-2">暂无重刷记录</p>
         </div>
         
         <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -189,7 +188,6 @@
                 :src="getMovieImageURL(movie.poster_path)"
                 :alt="movie.title"
                 class-name="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                fallback="/placeholder-poster.svg"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
                 <div class="absolute bottom-0 left-0 right-0 p-3">
@@ -209,6 +207,7 @@
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -332,18 +331,15 @@ const loadWatchingMovies = async () => {
   }
 }
 
-const loadWatchHistory = async () => {
+const loadReplayHistory = async () => {
   try {
     loadingHistory.value = true
     historyError.value = ''
     
-    // 获取最近添加的电影作为最近观看
+    // 获取最近更新的电影作为最近观看（数据库已按date_updated排序）
     const result = await databaseAPI.getMovies()
     if (result.success && result.data) {
-      // 按更新时间排序，取最近的12个
-      recentHistory.value = result.data
-        .sort((a, b) => new Date(b.updated_at || b.date_added).getTime() - new Date(a.updated_at || a.date_added).getTime())
-        .slice(0, 12)
+      recentHistory.value = result.data.slice(0, 12)
     } else {
       throw new Error(result.error || '获取历史数据失败')
     }
@@ -368,7 +364,7 @@ const initializeData = async () => {
       Promise.allSettled([
         loadStatistics(),
         loadWatchingMovies(),
-        loadWatchHistory()
+        loadReplayHistory()
       ]),
       timeout
     ]);

@@ -4,7 +4,7 @@
  * @author yanstu
  */
 
-import type { ApiResponse, Movie, SeasonsData } from '../../../types'
+import type { ApiResponse, Movie, SeasonsData, DatabaseRow } from '../../../types'
 import { DatabaseConnection } from '../connection'
 import { DatabaseUtils } from '../utils'
 
@@ -27,14 +27,15 @@ export class MovieDAO {
       const db = await DatabaseConnection.getInstance()
       
       let query = 'SELECT * FROM movies'
-      const params: any[] = []
+      const params: unknown[] = []
       
       if (status) {
         query += ' WHERE status = $1'
         params.push(status)
       }
       
-      query += ' ORDER BY updated_at DESC'
+      // 统一排序：按最后更新时间降序排列
+      query += ' ORDER BY date_updated DESC'
       
       if (limit) {
         const limitParam = status ? '$2' : '$1'
@@ -48,10 +49,10 @@ export class MovieDAO {
         }
       }
       
-      const result = await db.select(query, params) as any[]
+      const result = await db.select(query, params) as DatabaseRow[]
       
       // 解析JSON字段
-      const movies: Movie[] = result.map((row: any) => ({
+      const movies: Movie[] = result.map((row: DatabaseRow) => ({
         ...row,
         genres: DatabaseUtils.parseJsonField<string[]>(row.genres),
         tags: DatabaseUtils.parseJsonField<string[]>(row.tags),
@@ -71,7 +72,7 @@ export class MovieDAO {
   static async getMovieById(id: string): Promise<ApiResponse<Movie | null>> {
     try {
       const db = await DatabaseConnection.getInstance()
-      const result = await db.select('SELECT * FROM movies WHERE id = $1', [id]) as any[]
+      const result = await db.select('SELECT * FROM movies WHERE id = $1', [id]) as DatabaseRow[]
       
       if (result.length === 0) {
         return { success: true, data: null }
@@ -100,6 +101,13 @@ export class MovieDAO {
       const id = await DatabaseUtils.generateUuid()
       const timestamp = await DatabaseUtils.getCurrentTimestamp()
       
+      // 字段规则：
+      // - created_at: 添加到数据库的时间，不可修改
+      // - date_added: 初次观看时间，从watched_date设置或使用当前时间
+      // - date_updated: 每次更新影视信息时修改为最新时间
+      const dateAdded = (movie as Partial<Movie> & { watched_date?: string }).watched_date || timestamp
+      const dateUpdated = timestamp
+      
       // 使用与数据库表匹配的字段
       const query = `
         INSERT INTO movies (
@@ -113,25 +121,25 @@ export class MovieDAO {
       const params = [
         id,
         movie.title || '',
-        (movie as any).original_title || null,
-        (movie as any).year || null,
-        (movie as any).type || 'movie',
-        (movie as any).tmdb_id || null,
+        (movie as Partial<Movie> & { original_title?: string }).original_title || null,
+        (movie as Partial<Movie> & { year?: number }).year || null,
+        (movie as Partial<Movie> & { type?: string }).type || 'movie',
+        (movie as Partial<Movie> & { tmdb_id?: number }).tmdb_id || null,
         movie.poster_path || null,
         movie.overview || null,
         movie.status || 'watching',
-        (movie as any).personal_rating || null,
-        (movie as any).tmdb_rating || null,
-        (movie as any).notes || null,
-        (movie as any).watch_source || null,
-        (movie as any).current_episode || 0,
-        (movie as any).current_season || 1,
-        (movie as any).air_status || null,
-        (movie as any).total_episodes || null,
-        (movie as any).total_seasons || null,
-        (movie as any).seasons_data ? JSON.stringify((movie as any).seasons_data) : null,
-        timestamp,
-        timestamp,
+        (movie as Partial<Movie> & { personal_rating?: number }).personal_rating || null,
+        (movie as Partial<Movie> & { tmdb_rating?: number }).tmdb_rating || null,
+        (movie as Partial<Movie> & { notes?: string }).notes || null,
+        (movie as Partial<Movie> & { watch_source?: string }).watch_source || null,
+        (movie as Partial<Movie> & { current_episode?: number }).current_episode || 0,
+        (movie as Partial<Movie> & { current_season?: number }).current_season || 1,
+        (movie as Partial<Movie> & { air_status?: string }).air_status || null,
+        (movie as Partial<Movie> & { total_episodes?: number }).total_episodes || null,
+        (movie as Partial<Movie> & { total_seasons?: number }).total_seasons || null,
+        (movie as Partial<Movie> & { seasons_data?: SeasonsData }).seasons_data ? JSON.stringify((movie as Partial<Movie> & { seasons_data?: SeasonsData }).seasons_data) : null,
+        dateAdded,
+        dateUpdated,
         timestamp,
         timestamp
       ]
@@ -141,24 +149,24 @@ export class MovieDAO {
       const newMovie: Movie = {
         id,
         title: movie.title || '',
-        original_title: (movie as any).original_title || null,
-        year: (movie as any).year || null,
-        type: (movie as any).type || 'movie',
-        tmdb_id: (movie as any).tmdb_id || null,
+        original_title: (movie as Partial<Movie> & { original_title?: string }).original_title || null,
+        year: (movie as Partial<Movie> & { year?: number }).year || null,
+        type: (movie as Partial<Movie> & { type?: string }).type || 'movie',
+        tmdb_id: (movie as Partial<Movie> & { tmdb_id?: number }).tmdb_id || null,
         poster_path: movie.poster_path || null,
         overview: movie.overview || null,
         status: movie.status || 'watching',
-        personal_rating: (movie as any).personal_rating || 0,
-        tmdb_rating: (movie as any).tmdb_rating || null,
-        notes: (movie as any).notes || null,
-        watch_source: (movie as any).watch_source || null,
-        current_episode: (movie as any).current_episode || 0,
-        current_season: (movie as any).current_season || 1,
-        air_status: (movie as any).air_status || null,
-        total_episodes: (movie as any).total_episodes || null,
-        total_seasons: (movie as any).total_seasons || null,
-        date_added: timestamp,
-        date_updated: timestamp,
+        personal_rating: (movie as Partial<Movie> & { personal_rating?: number }).personal_rating || 0,
+        tmdb_rating: (movie as Partial<Movie> & { tmdb_rating?: number }).tmdb_rating || null,
+        notes: (movie as Partial<Movie> & { notes?: string }).notes || null,
+        watch_source: (movie as Partial<Movie> & { watch_source?: string }).watch_source || null,
+        current_episode: (movie as Partial<Movie> & { current_episode?: number }).current_episode || 0,
+        current_season: (movie as Partial<Movie> & { current_season?: number }).current_season || 1,
+        air_status: (movie as Partial<Movie> & { air_status?: string }).air_status || null,
+        total_episodes: (movie as Partial<Movie> & { total_episodes?: number }).total_episodes || null,
+        total_seasons: (movie as Partial<Movie> & { total_seasons?: number }).total_seasons || null,
+        date_added: dateAdded,
+        date_updated: dateUpdated,
         created_at: timestamp,
         updated_at: timestamp,
         genres: [],
@@ -182,6 +190,46 @@ export class MovieDAO {
       const db = await DatabaseConnection.getInstance()
       const timestamp = await DatabaseUtils.getCurrentTimestamp()
       
+      // 先查询原始数据用于比较变更
+      const originalResult = await db.select('SELECT watched_date, current_season, current_episode, date_updated FROM movies WHERE id = $1', [movie.id]) as DatabaseRow[]
+      if (originalResult.length === 0) {
+        return { success: false, error: '电影不存在' }
+      }
+      const originalData = originalResult[0]
+      
+      // 字段规则：
+      // - date_added: 根据观看日期更新，如果没有观看日期则使用当前时间
+      // - date_updated: 复杂逻辑判断
+      //   1. 如果用户修改了观看日期，date_updated同步为该日期
+      //   2. 如果用户未修改观看日期但修改了季数或集数，date_updated设为当前时间
+      //   3. 如果都未修改，date_updated保持原值
+      //   4. 观看日期的优先级最高
+      const dateAdded = (movie as Partial<Movie> & { watched_date?: string }).watched_date || timestamp
+      
+      let dateUpdated: string
+      const currentWatchedDate = (movie as Partial<Movie> & { watched_date?: string }).watched_date
+      const originalWatchedDate = originalData.watched_date as string
+      const currentSeason = (movie as Partial<Movie> & { current_season?: number }).current_season
+      const currentEpisode = (movie as Partial<Movie> & { current_episode?: number }).current_episode
+      const originalSeason = originalData.current_season
+      const originalEpisode = originalData.current_episode
+      
+      // 判断观看日期是否发生变更
+      const watchedDateChanged = currentWatchedDate !== originalWatchedDate
+      // 判断季数或集数是否发生变更
+      const seasonOrEpisodeChanged = currentSeason !== originalSeason || currentEpisode !== originalEpisode
+      
+      if (watchedDateChanged && currentWatchedDate) {
+        // 优先级最高：用户修改了观看日期，date_updated同步为该日期
+        dateUpdated = currentWatchedDate
+      } else if (!watchedDateChanged && seasonOrEpisodeChanged) {
+        // 用户未修改观看日期但修改了季数或集数，date_updated设为当前时间
+        dateUpdated = timestamp
+      } else {
+        // 都未修改，date_updated保持原值
+        dateUpdated = originalData.date_updated || timestamp
+      }
+      
       const query = `
         UPDATE movies SET 
           title = $1, overview = $2, poster_path = $3, backdrop_path = $4, 
@@ -189,30 +237,45 @@ export class MovieDAO {
           status = $9, personal_rating = $10, watch_count = $11, 
           current_episode = $12, current_season = $13, total_episodes = $14, total_seasons = $15,
           air_status = $16, notes = $17, watch_source = $18,
-          date_updated = $19, updated_at = $20
-        WHERE id = $21
+          date_added = $19, date_updated = $20, updated_at = $21
+        WHERE id = $22
       `
+      
+      const movieWithExtras = movie as Partial<Movie> & {
+        year?: number;
+        tmdb_rating?: number;
+        personal_rating?: number;
+        watch_count?: number;
+        current_episode?: number;
+        current_season?: number;
+        total_episodes?: number;
+        total_seasons?: number;
+        air_status?: string;
+        notes?: string;
+        watch_source?: string;
+      }
       
       const params = [
         movie.title,
         movie.overview || null,
         movie.poster_path || null,
         movie.backdrop_path || null,
-        (movie as any).year || null,
-        (movie as any).tmdb_rating || 0.0,
+        movieWithExtras.year || null,
+        movieWithExtras.tmdb_rating || 0.0,
         movie.runtime || null,
         DatabaseUtils.stringifyJsonField(movie.genres),
         movie.status,
-        (movie as any).personal_rating || null,
-        (movie as any).watch_count || 0,
-        (movie as any).current_episode !== undefined ? (movie as any).current_episode : 0,
-        (movie as any).current_season !== undefined ? (movie as any).current_season : 1,
-        (movie as any).total_episodes || null,
-        (movie as any).total_seasons || null,
-        (movie as any).air_status || null,
-        (movie as any).notes || null,
-        (movie as any).watch_source || null,
-        timestamp,
+        movieWithExtras.personal_rating || null,
+        movieWithExtras.watch_count || 0,
+        movieWithExtras.current_episode !== undefined ? movieWithExtras.current_episode : 0,
+        movieWithExtras.current_season !== undefined ? movieWithExtras.current_season : 1,
+        movieWithExtras.total_episodes || null,
+        movieWithExtras.total_seasons || null,
+        movieWithExtras.air_status || null,
+        movieWithExtras.notes || null,
+        movieWithExtras.watch_source || null,
+        dateAdded,
+        dateUpdated,
         timestamp,
         movie.id
       ]
@@ -221,7 +284,7 @@ export class MovieDAO {
       
       return { 
         success: true, 
-        data: { ...movie, date_updated: timestamp, updated_at: timestamp } 
+        data: { ...movie, date_added: dateAdded, date_updated: dateUpdated, updated_at: timestamp } 
       }
     } catch (error) {
       return { success: false, error: `更新电影失败: ${error}` }
@@ -298,4 +361,4 @@ export class MovieDAO {
     const result = await this.deleteMovie(id)
     return result.success
   }
-} 
+}

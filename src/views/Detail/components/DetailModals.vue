@@ -24,7 +24,6 @@
           :src="getImageUrl(movie?.poster_path)"
           :alt="movie?.title"
           class-name="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
-          fallback="/placeholder-poster.svg" 
         />
       </div>
     </template>
@@ -47,20 +46,10 @@ import Modal from '../../../components/ui/Modal.vue';
 import EditRecordModal from '../../../components/ui/EditRecordModal.vue';
 import CachedImage from '../../../components/ui/CachedImage.vue';
 import type { Movie } from '../../../types';
-import type { ModalState } from '../types';
+import type { DetailModalsProps, DetailModalsEmits } from '../types';
 
-interface Props {
-  modalState: ModalState;
-  movie: Movie | null;
-  getImageUrl: (path: string | undefined) => string;
-}
-
-interface Emits {
-  (e: 'closeEditModal'): void;
-  (e: 'closePosterPreview'): void;
-  (e: 'closeDialog'): void;
-  (e: 'saveRecord', movie: Movie): void;
-}
+type Props = DetailModalsProps;
+type Emits = DetailModalsEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

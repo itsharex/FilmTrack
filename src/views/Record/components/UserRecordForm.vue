@@ -70,19 +70,36 @@
         </div>
       </div>
 
-      <!-- 观看源/平台 -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">观看源/平台</label>
-        <input
-          :value="form.watch_source"
-          @input="$emit('update:watchSource', ($event.target as HTMLInputElement).value)"
-          type="text"
-          placeholder="如：Netflix、爱奇艺、电影院等"
-          class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
-                 border border-gray-200/50 text-gray-900 placeholder-gray-500
-                 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100
-                 hover:border-gray-300/70 hover:bg-white/90 transition-all duration-200"
-        />
+      <!-- 观看时间和观看源 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            观看时间 <span class="text-red-500">*</span>
+          </label>
+          <input
+            :value="form.watched_date"
+            @input="$emit('update:watchedDate', ($event.target as HTMLInputElement).value)"
+            type="date"
+            required
+            class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
+                   border border-gray-200/50 text-gray-900 placeholder-gray-500
+                   focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100
+                   hover:border-gray-300/70 hover:bg-white/90 transition-all duration-200"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">观看源/平台</label>
+          <input
+            :value="form.watch_source"
+            @input="$emit('update:watchSource', ($event.target as HTMLInputElement).value)"
+            type="text"
+            placeholder="如：Netflix、爱奇艺、电影院等"
+            class="w-full px-4 py-3 rounded-xl bg-white/80 backdrop-blur-sm 
+                   border border-gray-200/50 text-gray-900 placeholder-gray-500
+                   focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100
+                   hover:border-gray-300/70 hover:bg-white/90 transition-all duration-200"
+          />
+        </div>
       </div>
 
       <!-- 观看笔记 -->
@@ -108,22 +125,10 @@ import { computed, watch } from 'vue';
 import { Clipboard as ClipboardIcon } from 'lucide-vue-next';
 import HeadlessSelect from '../../../components/ui/HeadlessSelect.vue';
 import StarRating from '../../../components/ui/StarRating.vue';
-import type { RecordForm, StatusOption } from '../types';
+import type { UserRecordFormProps, UserRecordFormEmits } from '../types';
 
-interface Props {
-  form: RecordForm;
-  statusOptions: StatusOption[];
-}
-
-interface Emits {
-  (e: 'update:status', value: string): void;
-  (e: 'update:personalRating', value: number): void;
-  (e: 'update:currentSeason', value: number): void;
-  (e: 'update:currentEpisode', value: number): void;
-  (e: 'update:watchSource', value: string): void;
-  (e: 'update:notes', value: string): void;
-  (e: 'setToLastEpisode'): void;
-}
+type Props = UserRecordFormProps;
+type Emits = UserRecordFormEmits;
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();

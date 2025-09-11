@@ -10,6 +10,8 @@ import type {
   TMDbResponse,
   TMDbMovie,
   TMDbMovieDetail,
+  TMDbImage,
+  TMDbGenreResponse,
   ApiResponse,
   Movie
 } from '../types'
@@ -44,7 +46,7 @@ export class TMDbService {
    */
   private static async _request<T>(
     endpoint: string, 
-    params: Record<string, any> = {}, 
+    params: Record<string, unknown> = {}, 
     cacheKey: string
   ): Promise<ApiResponse<T>> {
     // 检查缓存
@@ -211,11 +213,11 @@ export class TMDbService {
    */
   static async getGenres(
     mediaType: 'movie' | 'tv'
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<TMDbGenreResponse>> {
     // 生成缓存键
     const cacheKey = `genres_${mediaType}`;
     
-    return this._request<any>(
+    return this._request<TMDbGenreResponse>(
       `/genre/${mediaType}/list`,
       {},
       cacheKey
@@ -276,7 +278,7 @@ export class TMDbService {
         if (data.backdrops && data.backdrops.length > 0) {
           // 使用最佳质量的剧照，优先取高分和高分辨率的图片，最多取5张
           backdropImages = data.backdrops
-            .sort((a: any, b: any) => {
+            .sort((a: TMDbImage, b: TMDbImage) => {
               // 先按投票数排序
               if (b.vote_count !== a.vote_count) {
                 return b.vote_count - a.vote_count;
@@ -289,7 +291,7 @@ export class TMDbService {
               return (b.width * b.height) - (a.width * a.height);
             })
             .slice(0, 5)
-            .map((img: any) => img.file_path);
+            .map((img: TMDbImage) => img.file_path);
           
           // 缓存结果
           apiCache.set(cacheKey, backdropImages);
@@ -317,8 +319,8 @@ export class TMDbTransformer {
     
     // 获取年份
     const releaseDate = isMovie 
-      ? (tmdbMovie as any).release_date 
-      : (tmdbMovie as any).first_air_date;
+      ? (tmdbMovie as TMDbMovie & { release_date?: string }).release_date 
+      : (tmdbMovie as TMDbMovie & { first_air_date?: string }).first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
     
     return {
@@ -328,7 +330,7 @@ export class TMDbTransformer {
       backdrop_path: tmdbMovie.backdrop_path || null,
       year: year || 0,
       vote_average: tmdbMovie.vote_average || 0,
-      runtime: (tmdbMovie as any).runtime || null,
+      runtime: (tmdbMovie as TMDbMovie & { runtime?: number }).runtime || null,
       genres: tmdbMovie.genre_ids ? this.genreIdsToNames(tmdbMovie.genre_ids) : null,
       status: 'planned' as const,
       personal_rating: null,
@@ -397,4 +399,4 @@ export const tmdbAPI = {
   getImageURL: TMDbService.getImageURL,
   getFullImageURL: TMDbService.getFullImageURL,
   loadBackdropImages: TMDbService.loadBackdropImages
-} 
+}

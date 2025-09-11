@@ -19,16 +19,10 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  showButtons: boolean;
-  canSubmit: boolean;
-  isSubmitting: boolean;
-}
+import type { ActionButtonsProps, ActionButtonsEmits } from '../types';
 
-interface Emits {
-  (e: 'reset'): void;
-  (e: 'submit'): void;
-}
+type Props = ActionButtonsProps;
+type Emits = ActionButtonsEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

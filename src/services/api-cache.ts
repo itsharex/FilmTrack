@@ -20,7 +20,7 @@ interface CacheItem<T> {
  * 提供API响应的缓存功能，支持内存缓存和本地存储
  */
 export class ApiCacheService {
-  private cache: Record<string, CacheItem<any>> = {};
+  private cache: Record<string, CacheItem<unknown>> = {};
   private expirationTime: number;
   
   /**
@@ -104,7 +104,7 @@ export class ApiCacheService {
   private loadFromStorage(): void {
     try {
       // 使用StorageService获取缓存数据
-      const storedCache = StorageService.get<Record<string, CacheItem<any>>>(StorageKey.API_CACHE, {});
+      const storedCache = StorageService.get<Record<string, CacheItem<unknown>>>(StorageKey.API_CACHE, {});
       if (storedCache) {
         this.cache = storedCache;
       } else {
@@ -118,4 +118,4 @@ export class ApiCacheService {
 }
 
 // 导出默认的API缓存实例
-export const apiCache = new ApiCacheService(); 
+export const apiCache = new ApiCacheService();

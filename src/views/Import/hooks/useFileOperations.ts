@@ -9,6 +9,7 @@ import { useAppStore } from '../../../stores/app';
 import { useMovieStore } from '../../../stores/movie';
 import { databaseAPI } from '../../../services/database-api';
 import type { ExportFormat } from '../../../types/import';
+import type { Movie, CSVParseResult } from '../../../types';
 
 export function useFileOperations() {
   // 状态
@@ -58,7 +59,7 @@ export function useFileOperations() {
   };
 
   // 导出为CSV
-  const exportToCSV = async (movies: any[], filePath: string) => {
+  const exportToCSV = async (movies: Movie[], filePath: string) => {
     // CSV表头
     const headers = [
       'id', 'title', 'original_title', 'type', 'status',
@@ -91,7 +92,7 @@ export function useFileOperations() {
   };
 
   // 导出为JSON
-  const exportToJSON = async (movies: any[], filePath: string) => {
+  const exportToJSON = async (movies: Movie[], filePath: string) => {
     const jsonContent = JSON.stringify(movies, null, 2);
     await writeTextFile(filePath, jsonContent);
   };
@@ -164,13 +165,13 @@ export function useFileOperations() {
   };
 
   // 解析CSV文件
-  const parseCSV = (csvContent: string): any[] => {
+  const parseCSV = (csvContent: string): CSVParseResult[] => {
     const lines = csvContent.split('\n');
     const headers = lines[0].split(',');
     
     return lines.slice(1).filter(line => line.trim()).map(line => {
       const values = parseCSVRow(line);
-      const item: any = {};
+      const item: CSVParseResult = {};
       
       headers.forEach((header, index) => {
         item[header] = values[index];
@@ -215,4 +216,4 @@ export function useFileOperations() {
     exportData,
     importFromFile
   };
-} 
+}

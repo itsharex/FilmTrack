@@ -42,7 +42,7 @@
       <!-- 搜索和筛选区域 -->
       <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full">
         <!-- 搜索输入框 -->
-        <div class="relative flex-1 sm:max-w-md">
+        <div class="relative flex-1">
           <SearchIcon 
             :size="20" 
             class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-10" 
@@ -86,14 +86,14 @@
             <button
               @click="$emit('changeViewMode', 'grid')"
               class="p-2 rounded-lg transition-all duration-200"
-              :class="viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-white/50'"
+              :class="viewMode === 'grid' ? 'bg-white border border-gray-200' : 'hover:bg-white/50'"
             >
               <GridIcon :size="18" class="text-gray-600" />
             </button>
             <button
               @click="$emit('changeViewMode', 'list')"
               class="p-2 rounded-lg transition-all duration-200"
-              :class="viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-white/50'"
+              :class="viewMode === 'list' ? 'bg-white border border-gray-200' : 'hover:bg-white/50'"
             >
               <ListIcon :size="18" class="text-gray-600" />
             </button>
@@ -123,28 +123,10 @@ import {
 } from 'lucide-vue-next';
 import HeadlessSelect from '../../../components/ui/HeadlessSelect.vue';
 import { STATUS_OPTIONS, TYPE_OPTIONS } from '../../../utils/constants';
-import type { ViewMode } from '../types';
+import type { LibraryHeaderProps, LibraryHeaderEmits } from '../types';
 
-interface Props {
-  searchQuery: string;
-  selectedType: string;
-  selectedStatus: string;
-  viewMode: ViewMode;
-  isSelectionMode: boolean;
-  selectedCount: number;
-  totalCount: number;
-  showSearchStats: boolean;
-}
-
-interface Emits {
-  (e: 'update:searchQuery', value: string): void;
-  (e: 'update:selectedType', value: string | number): void;
-  (e: 'update:selectedStatus', value: string | number): void;
-  (e: 'changeViewMode', mode: ViewMode): void;
-  (e: 'enableSelection'): void;
-  (e: 'cancelSelection'): void;
-  (e: 'confirmDelete'): void;
-}
+type Props = LibraryHeaderProps;
+type Emits = LibraryHeaderEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

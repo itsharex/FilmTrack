@@ -10,7 +10,7 @@
         <Navigation />
 
         <!-- 页面内容 -->
-        <main class="flex-1 overflow-auto">
+        <main class="flex-1 overflow-hidden">
           <router-view v-slot="{ Component }">
             <transition name="page" mode="out-in">
               <component :is="Component" />
@@ -74,7 +74,7 @@ import SettingsModal from './components/ui/SettingsModal.vue';
 import UpdateModal from './components/ui/UpdateModal.vue';
 import { listen } from '@tauri-apps/api/event';
 import UpdateService from './services/update';
-import type { UpdateCheckResult } from './types';
+import type { UpdateCheckResult, AppSettings } from './types';
 import { open } from '@tauri-apps/plugin-shell';
 
 const router = useRouter();
@@ -162,7 +162,7 @@ const updateModalVisible = ref(false);
 const updateInfo = ref<UpdateCheckResult | null>(null);
 
 // 处理设置保存
-const handleSettingsSave = (settings: any) => {
+const handleSettingsSave = (settings: AppSettings) => {
   appStore.updateSettings(settings);
   settingsVisible.value = false;
 };

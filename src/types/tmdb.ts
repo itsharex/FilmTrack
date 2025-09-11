@@ -27,6 +27,23 @@ export interface TMDbSpokenLanguage {
   name: string;
 }
 
+// 创作者信息
+export interface TMDbCreator {
+  id: number;
+  credit_id: string;
+  name: string;
+  gender: number;
+  profile_path: string | null;
+}
+
+// 电影系列信息
+export interface TMDbCollection {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+}
+
 export interface TMDbNetwork {
   id: number;
   logo_path: string | null;
@@ -66,7 +83,7 @@ export interface TMDbSeason {
 export interface TMDbTVDetails {
   adult: boolean;
   backdrop_path: string | null;
-  created_by: any[];
+  created_by: TMDbCreator[];
   episode_run_time: number[];
   first_air_date: string;
   genres: TMDbGenre[];
@@ -102,7 +119,7 @@ export interface TMDbTVDetails {
 export interface TMDbMovieDetails {
   adult: boolean;
   backdrop_path: string | null;
-  belongs_to_collection: any | null;
+  belongs_to_collection: TMDbCollection | null;
   budget: number;
   genres: TMDbGenre[];
   homepage: string;
@@ -132,7 +149,7 @@ export interface TMDbSearchResult {
   adult: boolean;
   backdrop_path: string | null;
   id: number;
-  media_type: 'movie' | 'tv' | 'person';
+  media_type: 'movie' | 'tv';
   original_language: string;
   overview: string;
   popularity: number;
@@ -214,4 +231,4 @@ export interface TMDbImageConfig {
  * - Networks: [bilibili]
  * - Vote Average: 9.1
  * - Vote Count: 43
- */ 
+ */

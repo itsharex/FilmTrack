@@ -68,20 +68,10 @@ import { Search as SearchIcon } from 'lucide-vue-next';
 import SearchResults from './SearchResults.vue';
 import type { TMDbMovie } from '../../../types';
 
-interface Props {
-  searchQuery: string;
-  results: TMDbMovie[];
-  loading: boolean;
-  showSearchTips: boolean;
-  getImageUrl: (path: string | null) => string;
-  isAlreadyAdded: (result: TMDbMovie) => boolean;
-}
+import type { SearchSectionProps, SearchSectionEmits } from '../types';
 
-interface Emits {
-  (e: 'update:searchQuery', value: string): void;
-  (e: 'selectFirst'): void;
-  (e: 'resultClick', result: TMDbMovie): void;
-}
+type Props = SearchSectionProps;
+type Emits = SearchSectionEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

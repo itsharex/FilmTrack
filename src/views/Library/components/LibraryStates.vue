@@ -48,19 +48,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Search as SearchIcon } from 'lucide-vue-next';
+import type { LibraryStatesProps, LibraryStatesEmits } from '../types';
 
-interface Props {
-  loading: boolean;
-  isEmpty: boolean;
-  hasMore: boolean;
-  itemCount: number;
-  error?: string;
-  searchQuery?: string;
-}
-
-interface Emits {
-  (e: 'retry'): void;
-}
+type Props = LibraryStatesProps;
+type Emits = LibraryStatesEmits;
 
 const props = defineProps<Props>();
 defineEmits<Emits>();

@@ -5,7 +5,7 @@
       :key="movie.id"
       class="bg-white/90 rounded-2xl p-6 border border-gray-200/50
              hover:bg-white hover:border-gray-300/50 transition-colors duration-200
-             hover:shadow-md"
+             "
       style="transform: none; will-change: auto; isolation: auto;"
       :class="{'cursor-pointer': !isSelectionMode, 'border-blue-500 bg-blue-50/50': isItemSelected(movie.id)}"
       @click="handleItemClick(movie.id)"
@@ -26,8 +26,7 @@
           <CachedImage
             :src="getImageURL(movie.poster_path)"
             :alt="movie.title"
-            class-name="w-20 h-30 object-cover shadow-sm transition-transform duration-300 hover:scale-110"
-            fallback="/placeholder-poster.svg"
+            class-name="w-20 h-30 object-cover transition-transform duration-300 hover:scale-110"
           />
         </div>
         
@@ -70,20 +69,10 @@
 import { Check as CheckIcon, Star as StarIcon } from 'lucide-vue-next';
 import CachedImage from '../../../components/ui/CachedImage.vue';
 import { getStatusLabel, getStatusBadgeClass, getTypeLabel } from '../../../utils/constants';
-import type { MovieRecord } from '../types';
+import type { ViewProps, ViewEmits } from '../types';
 
-interface Props {
-  movies: MovieRecord[];
-  isSelectionMode: boolean;
-  isItemSelected: (id: string) => boolean;
-  getImageURL: (path: string | undefined) => string;
-}
-
-interface Emits {
-  (e: 'itemClick', id: string): void;
-  (e: 'toggleSelect', id: string): void;
-  (e: 'navigateToDetail', id: string): void;
-}
+type Props = ViewProps;
+type Emits = ViewEmits;
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();

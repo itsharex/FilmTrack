@@ -45,6 +45,7 @@
             :movie="detailState.movie"
             :watch-progress="watchProgress"
             :get-progress-color="getProgressColor"
+            :format-date="formatDate"
           />
 
           <!-- 侧边栏信息 -->

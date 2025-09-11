@@ -16,6 +16,7 @@ export { DatabaseUtils } from './utils'
 // 导出数据访问对象
 export { MovieDAO } from './dao/movie.dao'
 export { StatisticsDAO } from './dao/statistics.dao'
+export { ReplayRecordDAO } from './dao/replay-record.dao';
 
 // 为了向后兼容，保留原始的DatabaseService别名
 import { DatabaseConnection } from './connection'
@@ -46,4 +47,4 @@ export class DatabaseService {
   static async ensureTableStructure() {
     return DatabaseSchema.ensureTableStructure()
   }
-} 
+}

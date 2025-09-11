@@ -73,7 +73,7 @@
             <div class="setting-item-info">
               <div class="setting-item-label">清空所有数据</div>
               <div class="setting-item-description text-red-600">
-                <strong>危险操作：</strong>删除所有观看记录和数据库文件，此操作不可恢复
+                <strong>危险操作：</strong>删除所有重刷记录和数据库文件，此操作不可恢复
               </div>
             </div>
             <button 
@@ -124,23 +124,10 @@ import { invoke } from '@tauri-apps/api/core';
 import Modal from './Modal.vue';
 import StorageService, { StorageKey } from '../../utils/storage';
 
-interface Props {
-  isOpen: boolean;
-}
+import type { SettingsModalProps, SettingsModalEmits, AppSettings, WindowSettings } from './types';
 
-interface Emits {
-  (e: 'close'): void;
-  (e: 'save', settings: AppSettings): void;
-}
-
-interface WindowSettings {
-  resizable: boolean;
-}
-
-interface AppSettings {
-  minimizeToTray: boolean;
-  window: WindowSettings;
-}
+type Props = SettingsModalProps;
+type Emits = SettingsModalEmits;
 
 interface StorageInfo {
   cache_size: string;
@@ -247,7 +234,7 @@ const clearAllData = () => {
     visible: true,
     type: 'warning',
     title: '清空所有数据',
-    message: '⚠️ 危险操作：这将删除所有观看记录、数据库文件和缓存。此操作不可恢复，确定要继续吗？',
+    message: '⚠️ 危险操作：这将删除所有重刷记录、数据库文件和缓存。此操作不可恢复，确定要继续吗？',
     onConfirm: async () => {
       confirmDialog.value.visible = false;
       isClearing.value = true;

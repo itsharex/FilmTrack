@@ -4,6 +4,7 @@
  */
 
 import StorageService, { StorageKey } from './storage';
+import type { CacheItem } from '../types';
 
 export interface CacheStats {
   totalSize: number;
@@ -45,7 +46,7 @@ export class CacheManager {
         totalSize += itemSize;
 
         // 更新时间戳
-        const timestamp = (value as any).timestamp || 0;
+        const timestamp = (value as CacheItem<unknown>).timestamp || 0;
         if (timestamp < oldestTimestamp) oldestTimestamp = timestamp;
         if (timestamp > newestTimestamp) newestTimestamp = timestamp;
 
@@ -129,7 +130,7 @@ export class CacheManager {
       let deletedCount = 0;
 
       entries.forEach(([key, value]) => {
-        const timestamp = (value as any).timestamp || 0;
+        const timestamp = (value as CacheItem<unknown>).timestamp || 0;
         if (now - timestamp > maxAge) {
           delete cache[key];
           deletedCount++;
@@ -172,11 +173,11 @@ export class CacheManager {
       const recentThreshold = 2 * 60 * 60 * 1000; // 2小时
       const importantThreshold = 7 * 24 * 60 * 60 * 1000; // 7天
 
-      const optimizedCache: Record<string, any> = {};
+      const optimizedCache: Record<string, unknown> = {};
       let deletedCount = 0;
 
       entries.forEach(([key, value]) => {
-        const timestamp = (value as any).timestamp || 0;
+        const timestamp = (value as CacheItem<unknown>).timestamp || 0;
         const age = now - timestamp;
         const type = this.getCacheType(key);
         const isImportant = importantTypes.includes(type);
@@ -229,5 +230,5 @@ export const cacheManager = CacheManager;
 
 // 在开发环境下暴露到全局对象，便于调试
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  (window as any).cacheManager = cacheManager;
+  (window as unknown as Window & { cacheManager: typeof cacheManager }).cacheManager = cacheManager;
 }

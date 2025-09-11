@@ -4,6 +4,7 @@
  */
 
 import { generateSearchVariants } from './titleUtils';
+import type { TMDbMovie, TMDbResponse, RelevanceScoreResult } from '../types';
 
 /**
  * 生成针对 TMDb 优化的搜索策略
@@ -108,7 +109,7 @@ function generateNumberVariants(title: string): string[] {
  * @param result TMDb 搜索结果
  * @returns 相关性分数 (0-1)
  */
-export function calculateRelevanceScore(query: string, result: any): number {
+export function calculateRelevanceScore(query: string, result: TMDbMovie): number {
   if (!result || !query) return 0;
 
   const title = result.title || result.name || '';

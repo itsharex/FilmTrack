@@ -11,7 +11,7 @@ import { APP_CONFIG } from '../../config/app.config';
  * 用于管理和限制API请求频率
  */
 export class RequestQueue {
-  private queue: Array<() => Promise<any>> = [];
+  private queue: Array<() => Promise<unknown>> = [];
   private processing = false;
   private requestInterval: number;
   
@@ -96,4 +96,4 @@ export class RequestQueue {
 }
 
 // 导出默认的TMDb API请求队列实例
-export const tmdbQueue = new RequestQueue(APP_CONFIG.tmdb.request.interval); 
+export const tmdbQueue = new RequestQueue(APP_CONFIG.tmdb.request.interval);

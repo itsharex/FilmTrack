@@ -31,17 +31,10 @@ import MovieDetails from './MovieDetails.vue';
 import DeleteSection from './DeleteSection.vue';
 import type { Movie } from '../../../types';
 
-interface Props {
-  movie: Movie;
-  formatDate: (dateString: string) => string;
-}
+import type { DetailPropsWithFormat, DetailSidebarEmits } from '../types';
 
-interface Emits {
-  (e: 'editRecord'): void;
-  (e: 'markEpisodeWatched'): void;
-  (e: 'updateMovieInfo'): void;
-  (e: 'deleteRecord'): void;
-}
+type Props = DetailPropsWithFormat;
+type Emits = DetailSidebarEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();

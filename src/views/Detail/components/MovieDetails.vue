@@ -4,7 +4,7 @@
     <div class="space-y-3 text-sm">
       <div class="flex justify-between">
         <span class="text-gray-600">添加日期</span>
-        <span class="font-medium">{{ formatDate(movie.date_added) }}</span>
+        <span class="font-medium">{{ formatDate(movie.created_at) }}</span>
       </div>
       <div v-if="movie.total_seasons" class="flex justify-between">
         <span class="text-gray-600">总季数</span>
@@ -14,6 +14,7 @@
         <span class="text-gray-600">时长</span>
         <span class="font-medium">{{ movie.runtime }} 分钟</span>
       </div>
+
       <div class="flex justify-between">
         <span class="text-gray-600">TMDb ID</span>
         <a 
@@ -31,10 +32,9 @@
 <script setup lang="ts">
 import type { Movie } from '../../../types';
 
-interface Props {
-  movie: Movie;
-  formatDate: (dateString: string) => string;
-}
+import type { DetailPropsWithFormat } from '../types';
+
+type Props = DetailPropsWithFormat;
 
 defineProps<Props>();
 </script>

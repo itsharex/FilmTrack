@@ -149,7 +149,7 @@ const downloadProgress = ref<DownloadProgress>({
 })
 
 // 下载监听器
-let downloadListener: any = null
+let downloadListener: (() => void) | null = null
 
 // 处理关闭
 const handleClose = () => {

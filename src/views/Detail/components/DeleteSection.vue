@@ -12,10 +12,7 @@
 
 <script setup lang="ts">
 import { Trash as TrashIcon } from 'lucide-vue-next';
+import type { DeleteSectionEmits } from '../types';
 
-interface Emits {
-  (e: 'deleteRecord'): void;
-}
-
-defineEmits<Emits>();
+defineEmits<DeleteSectionEmits>();
 </script>

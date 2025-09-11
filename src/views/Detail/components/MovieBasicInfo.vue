@@ -44,13 +44,10 @@
 import { getTypeLabel, getStatusLabel, getStatusBadgeClass, getAirStatusLabel } from '../../../utils/constants';
 import type { Movie } from '../../../types';
 
-interface Props {
-  movie: Movie;
-}
+import type { BaseDetailProps, BaseDetailEmits } from '../types';
 
-interface Emits {
-  (e: 'copyTitle', title: string): void;
-}
+type Props = BaseDetailProps;
+type Emits = BaseDetailEmits;
 
 defineProps<Props>();
 defineEmits<Emits>();
