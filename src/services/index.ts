@@ -19,3 +19,5 @@ export * from './api-cache';
 // 导出请求队列服务
 export * from './request-queue';
 
+// 更新提醒服务
+export * from './reminder';

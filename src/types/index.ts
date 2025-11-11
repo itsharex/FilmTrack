@@ -72,6 +72,8 @@ export interface TMDbMovieDetail extends TMDbMovie {
   episode_run_time?: number[];
   in_production?: boolean;
   last_air_date?: string;
+  last_episode_to_air?: TMDbEpisode | null;
+  next_episode_to_air?: TMDbEpisode | null;
   type?: string;
 }
 
@@ -107,6 +109,20 @@ export interface TMDbSeason {
   season_number: number;
   episode_count: number;
   air_date: string;
+}
+
+/** TMDb 单集信息 */
+export interface TMDbEpisode {
+  id: number;
+  name: string;
+  overview: string;
+  air_date: string;
+  episode_number: number;
+  season_number: number;
+  still_path?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+  runtime?: number | null;
 }
 
 /** 季集数据 */
@@ -198,6 +214,27 @@ export interface ReplayRecord extends BaseEntity {
   status?: string; // 兼容旧版API
   // 关联数据
   movie?: Movie; // 关联的电影信息（查询时可选包含）
+}
+
+/** 电视剧更新提醒数据 */
+export interface TVEpisodeReminder {
+  movie_id: string;
+  tmdb_id?: number;
+  title: string;
+  status: Status;
+  poster_path?: string | null;
+  air_date: string;
+  season_number?: number;
+  episode_number?: number;
+  episode_name?: string | null;
+  overview?: string | null;
+  still_path?: string | null;
+}
+
+/** 更新提醒按日期分组 */
+export interface TVReminderGroup {
+  date: string;
+  items: TVEpisodeReminder[];
 }
 
 /** 评论/评价 */

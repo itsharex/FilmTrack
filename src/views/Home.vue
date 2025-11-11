@@ -85,6 +85,87 @@
               </div>
             </div>
           </div>
+      </div>
+    </div>
+
+      <!-- 更新提醒 -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-fade-in-up" style="animation-delay: 150ms;">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 rounded-full bg-blue-50 text-blue-600">
+              <BellRingIcon class="w-5 h-5" />
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">更新提醒</h2>
+              <p class="text-gray-500 text-sm">未来7天内预计播出的剧集</p>
+            </div>
+          </div>
+          <button
+            class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-50 transition-colors duration-200 disabled:opacity-60"
+            @click="refreshReminders"
+            :disabled="loadingReminders"
+          >
+            <svg v-if="loadingReminders" class="animate-spin h-4 w-4 mr-2 text-blue-600" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z"></path>
+            </svg>
+            <span>{{ loadingReminders ? '刷新中...' : '刷新提醒' }}</span>
+          </button>
+        </div>
+
+        <div v-if="loadingReminders" class="flex items-center justify-center py-8 text-gray-600">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span class="ml-3">加载更新提醒...</span>
+        </div>
+
+        <div v-else-if="reminderError" class="text-center py-8">
+          <p class="text-red-600 mb-4">{{ reminderError }}</p>
+          <button @click="refreshReminders" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            重试
+          </button>
+        </div>
+
+        <div v-else-if="reminderGroups.length === 0" class="text-center py-12">
+          <BellRingIcon class="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p class="text-gray-500 mb-2">近期没有即将更新的剧集</p>
+          <p class="text-gray-400 text-sm">记录更多正在播出的电视剧即可收到提醒</p>
+        </div>
+
+        <div v-else class="space-y-6">
+          <div
+            v-for="group in reminderGroups"
+            :key="group.date"
+            class="space-y-3"
+          >
+            <div class="flex items-center text-gray-700 font-medium">
+              <CalendarIcon class="w-4 h-4 mr-2 text-blue-500" />
+              <span>{{ formatReminderDate(group.date) }}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div
+                v-for="item in group.items"
+                :key="`${item.movie_id}-${item.air_date}-${item.episode_number ?? 'na'}`"
+                class="border border-gray-100 rounded-lg p-4 hover:border-blue-200 hover:shadow-md transition-all duration-200 cursor-pointer bg-gray-50/60"
+                @click="navigateToDetail(item.movie_id)"
+              >
+                <div class="flex items-start space-x-4">
+                  <div class="w-16 h-24 rounded-md overflow-hidden bg-gray-200 flex-shrink-0">
+                    <CachedImage
+                      :src="getMovieImageURL(item.poster_path)"
+                      :alt="item.title"
+                      class-name="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div class="flex-1 update-reminder-info">
+                    <p class="text-base font-semibold text-gray-900 mb-1 truncate">{{ item.title }}</p>
+                    <p class="text-sm text-blue-600 font-medium">{{ formatEpisodeLabel(item.season_number, item.episode_number) }}</p>
+                    <p v-if="item.episode_name" class="text-sm text-gray-600 mt-1 truncate">{{ item.episode_name }}</p>
+                    <!-- <p class="text-xs text-gray-400 mt-2">{{ getRelativeDayLabel(item.air_date) || '即将播出' }}</p> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -218,9 +299,10 @@ import { useRouter } from 'vue-router'
 import { useMovieStore } from '../stores/movie'
 import { tmdbAPI } from '../utils/api'
 import { databaseAPI } from '../services/database-api'
+import { tvReminderService } from '../services/reminder'
 import { formatRating, getStatusLabel, getStatusBadgeClass } from '../utils/constants'
 import { APP_CONFIG } from '../../config/app.config'
-import type { Movie, Statistics } from '../types'
+import type { Movie, Statistics, TVReminderGroup } from '../types'
 import { 
   PlusIcon,
   FilmIcon,
@@ -228,7 +310,8 @@ import {
   StarIcon,
   CalendarIcon,
   TrendingUpIcon,
-  ClockIcon
+  ClockIcon,
+  BellRingIcon
 } from 'lucide-vue-next'
 import CachedImage from '../components/ui/CachedImage.vue'
 
@@ -239,9 +322,11 @@ const movieStore = useMovieStore()
 const loadingStats = ref(true)
 const loadingWatching = ref(true)
 const loadingHistory = ref(true)
+const loadingReminders = ref(true)
 const statsError = ref('')
 const watchingError = ref('')
 const historyError = ref('')
+const reminderError = ref('')
 
 const statistics = ref<Statistics>({
   total_movies: 0,
@@ -253,6 +338,7 @@ const statistics = ref<Statistics>({
 
 const watchingMovies = ref<Movie[]>([])
 const recentHistory = ref<Movie[]>([])
+const reminderGroups = ref<TVReminderGroup[]>([])
 
 // 方法
 const getMovieImageURL = (path: string | undefined) => {
@@ -292,6 +378,44 @@ const getTotalWatchedEpisodes = (movie: Movie) => {
   return totalWatchedEpisodes;
 }
 
+const getRelativeDayLabel = (dateStr: string) => {
+  const target = new Date(dateStr)
+  if (Number.isNaN(target.getTime())) return ''
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+
+  if (diffDays === 0) return '今天'
+  if (diffDays === 1) return '明天'
+  if (diffDays === 2) return '后天'
+  if (diffDays > 2) return `还有${diffDays}天`
+  return ''
+}
+
+const formatReminderDate = (dateStr: string) => {
+  const target = new Date(dateStr)
+  if (Number.isNaN(target.getTime())) return dateStr
+
+  const relative = getRelativeDayLabel(dateStr)
+  const readableDate = `${target.getMonth() + 1}月${target.getDate()}日`
+  const weekdayMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const weekday = weekdayMap[target.getDay()]
+
+  return `${relative ? relative + ' · ' : ''}${readableDate}（${weekday}）`
+}
+
+const formatEpisodeLabel = (season?: number, episode?: number) => {
+  const parts = []
+  if (season) {
+    parts.push(`第${season}季`)
+  }
+  if (episode) {
+    parts.push(`第${episode}集`)
+  }
+  return parts.join(' · ') || '新集即将上线'
+}
+
 // 数据加载方法
 const loadStatistics = async () => {
   try {
@@ -312,22 +436,33 @@ const loadStatistics = async () => {
   }
 }
 
-const loadWatchingMovies = async () => {
+interface LoadWatchingOptions {
+  silent?: boolean
+}
+
+const loadWatchingMovies = async (options: LoadWatchingOptions = {}): Promise<Movie[]> => {
+  const { silent = false } = options
   try {
-    loadingWatching.value = true
+    if (!silent) {
+      loadingWatching.value = true
+    }
     watchingError.value = ''
     
     const result = await databaseAPI.getMovies('watching')
     if (result.success && result.data) {
       watchingMovies.value = result.data
+      return result.data
     } else {
       throw new Error(result.error || '获取追剧数据失败')
     }
   } catch (error) {
     console.error('获取追剧数据失败:', error)
     watchingError.value = error instanceof Error ? error.message : '获取追剧数据失败'
+    return []
   } finally {
-    loadingWatching.value = false
+    if (!silent) {
+      loadingWatching.value = false
+    }
   }
 }
 
@@ -352,6 +487,31 @@ const loadReplayHistory = async () => {
   }
 }
 
+const loadUpdateReminders = async (movies?: Movie[]) => {
+  try {
+    loadingReminders.value = true
+    reminderError.value = ''
+
+    const result = await tvReminderService.getReminderGroups({ movies })
+    if (result.success && result.data) {
+      reminderGroups.value = result.data
+    } else {
+      throw new Error(result.error || '获取更新提醒失败')
+    }
+  } catch (error) {
+    console.error('获取更新提醒失败:', error)
+    reminderError.value = error instanceof Error ? error.message : '获取更新提醒失败'
+    reminderGroups.value = []
+  } finally {
+    loadingReminders.value = false
+  }
+}
+
+const refreshReminders = async () => {
+  const latestWatching = await loadWatchingMovies({ silent: true })
+  await loadUpdateReminders(latestWatching)
+}
+
 // 初始化数据
 const initializeData = async () => {
   try {
@@ -360,11 +520,16 @@ const initializeData = async () => {
       setTimeout(() => reject(new Error('数据加载超时')), 10000)
     );
 
+    const watchingPromise = loadWatchingMovies()
+
     await Promise.race([
       Promise.allSettled([
         loadStatistics(),
-        loadWatchingMovies(),
-        loadReplayHistory()
+        watchingPromise,
+        loadReplayHistory(),
+        watchingPromise
+          .then(data => loadUpdateReminders(data))
+          .catch(() => loadUpdateReminders())
       ]),
       timeout
     ]);
@@ -417,5 +582,12 @@ onMounted(() => {
 /* 卡片悬停阴影 */
 .group-hover\:shadow-lg:hover {
   box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.update-reminder-info {
+  display: flex;
+  height: -webkit-fill-available;
+  flex-direction: column;
+  justify-content: space-around
 }
 </style>
